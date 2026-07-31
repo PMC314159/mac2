@@ -1,8 +1,32 @@
 import { Readable } from "node:stream";
 import chromium from "@sparticuz/chromium";
+import { del } from "@vercel/blob";
 import puppeteer from "puppeteer-core";
 
 const MAX_HTML_LENGTH = 4_250_000;
+
+function isTemporaryBlobUrl(value) {
+  try {
+    const url = new URL(value);
+
+    const validHost =
+      url.hostname ===
+        "public.blob.vercel-storage.com" ||
+      url.hostname.endsWith(
+        ".public.blob.vercel-storage.com"
+      );
+
+    return (
+      url.protocol === "https:" &&
+      validHost &&
+      url.pathname.includes(
+        "/pair-archive-temp/"
+      )
+    );
+  } catch {
+    return false;
+  }
+}
 
 function sendJson(response, status, body) {
   response.statusCode = status;
@@ -25,6 +49,22 @@ export default async function handler(request, response) {
       : request.body;
 
   const html = body?.html;
+
+  const temporaryBlobUrls =
+    Array.from(
+      new Set(
+        (
+          Array.isArray(
+            body?.temporaryBlobUrls
+          )
+            ? body.temporaryBlobUrls
+            : []
+        ).filter(
+          isTemporaryBlobUrl
+        )
+      )
+    );
+
   const width = Math.max(
     900,
     Math.min(1800, Number(body?.width) || 1440)
@@ -66,6 +106,11 @@ export default async function handler(request, response) {
 
     const page = await browser.newPage();
 
+    await page.setExtraHTTPHeaders({
+      "Accept-Language":
+        "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+    });
+
     await page.setViewport({
       width,
       height: 1200,
@@ -78,7 +123,22 @@ export default async function handler(request, response) {
     });
 
     await page.evaluate(async () => {
-      if (document.fonts?.ready) {
+      if (document.fonts) {
+        await Promise.allSettled([
+          document.fonts.load(
+            '400 16px "Noto Sans KR"',
+            "한글 漢字"
+          ),
+          document.fonts.load(
+            '700 16px "Noto Sans KR"',
+            "한글 漢字"
+          ),
+          document.fonts.load(
+            '900 16px "Noto Sans KR"',
+            "한글 漢字"
+          )
+        ]);
+
         await document.fonts.ready;
       }
 
@@ -163,5 +223,18 @@ export default async function handler(request, response) {
     }
   } finally {
     await browser?.close();
+
+    if (temporaryBlobUrls.length) {
+      try {
+        await del(
+          temporaryBlobUrls
+        );
+      } catch (error) {
+        console.warn(
+          "임시 Blob 정리에 실패했습니다.",
+          error
+        );
+      }
+    }
   }
 }
