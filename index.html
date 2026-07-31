@@ -7,10 +7,32 @@
   <title>Pair Archive</title>
 
   <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap"
+  />
+  <link
     rel="stylesheet"
     crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css"
   />
+
+  <script type="module">
+    import { upload } from "https://esm.sh/@vercel/blob@2.6.1/client";
+
+    window.__pairArchiveBlobUpload = upload;
+    window.dispatchEvent(
+      new Event("pair-archive-blob-ready")
+    );
+  </script>
 
   <style>
     :root {
@@ -27,7 +49,7 @@
       --ink: #35293e;
       --muted: #786c82;
       --accent: #9a7caf;
-      --accent-deep: #604a70;
+      --accent-deep: #1b002e;
       --accent-soft: #e7daef;
       --line: rgba(89,67,101,.14);
       --shadow: 0 22px 62px rgba(47,31,56,.2);
@@ -36,7 +58,7 @@
       --wall-a-rgb: 103,85,115;
       --wall-b-rgb: 216,200,228;
       --accent-rgb: 154,124,175;
-      --deep-rgb: 96,74,112;
+      --deep-rgb: 27,0,46;
       --surface-rgb: 251,247,253;
       --ink-rgb: 53,41,62;
     }
@@ -57,7 +79,7 @@
         radial-gradient(circle at 12% 10%, rgba(174,137,194,.22), transparent 30%),
         radial-gradient(circle at 88% 8%, rgba(225,207,236,.15), transparent 26%),
         var(--editor-bg);
-      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Pretendard, "Noto Sans KR", "Noto Sans CJK KR", "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     button,
@@ -2351,248 +2373,598 @@
     }
 
 
+    /* subtle credit visibility enhancement */
+
+    #captureArea .archive-credit,
+    #captureArea .creator-credit {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      color: rgba(255,255,255,.62) !important;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      text-shadow:
+        0 1px 1px rgba(0,0,0,.24),
+        0 0 2px rgba(0,0,0,.12);
+    }
+
+    #captureArea .creator-credit {
+      display: block;
+    }
+
+    /* rich story editor */
+
+    .story-format-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .story-format-btn {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 30px;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      color: var(--editor-text);
+      background: rgba(255,255,255,.055);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .story-format-bold {
+      font-weight: 900;
+    }
+
+    .story-format-italic {
+      font-style: italic;
+      font-weight: 700;
+    }
+
+    .story-format-btn:hover {
+      background: rgba(255,255,255,.11);
+    }
+
+    .story-rich-editor {
+      min-height: 170px;
+      padding: 11px 12px;
+      overflow-wrap: anywhere;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 10px;
+      outline: none;
+      color: var(--editor-text);
+      background: rgba(12,14,18,.42);
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .story-rich-editor:focus {
+      border-color: rgba(var(--accent-rgb),.62);
+      box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.11);
+    }
+
+    .story-rich-editor strong,
+    .story-description strong {
+      font-weight: 900;
+    }
+
+    .story-rich-editor em,
+    .story-description em {
+      font-style: italic;
+    }
+
+    #captureArea .story-time {
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+      word-break: keep-all;
+    }
+
+    /* NOW PLAYING text contrast — forced final override */
+
+    #captureArea .music-now .music-label,
+    #captureArea .music-now .music-title,
+    #captureArea .music-now .music-artist {
+      color: #fff !important;
+      text-shadow:
+        0 2px 9px rgba(0,0,0,.58),
+        0 1px 2px rgba(0,0,0,.48) !important;
+    }
+
+    #captureArea .music-now .music-artist {
+      color: rgba(255,255,255,.84) !important;
+    }
+
+
+    #captureArea .symbol-visual img {
+      will-change: transform, filter;
+      backface-visibility: hidden;
+    }
+
+
+    #captureArea .song-play {
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    #captureArea .song-row.is-active .song-play {
+      background: rgba(var(--deep-rgb),.16);
+      border-color: rgba(var(--deep-rgb),.22);
+    }
+
+
     /* =====================================================
-       DYNAMIC STORY GRID VARIANT
-       MEMO / SYMBOL / MUSIC / KEYWORDS를 숨기고
-       4~14개의 서사를 2열로 자동 배치
+       5~6 STORY SIZE-PRESERVING LAYOUT
     ====================================================== */
 
-    .removed-editor-section,
-    .pair-tags-field {
-      display: none !important;
+    .story-filler {
+      display: none;
+      min-height: 0;
+      padding: 10px;
+      overflow: hidden;
+      border-radius: 19px;
+      flex: 1 1 auto;
+      flex-direction: column;
+    }
+
+    .lower-grid.story-expanded {
+      height: var(--expanded-lower-height, 510px);
+      overflow: hidden;
+    }
+
+    .lower-grid.story-expanded .side-stack-left .relation-widget {
+      flex: 0 0 var(--base-relation-height, auto);
+    }
+
+    .lower-grid.story-expanded .side-stack-left .symbol-widget {
+      flex: 0 0 var(--base-symbol-height, auto);
+    }
+
+    .lower-grid.story-expanded .side-stack-right .music-widget {
+      flex: 0 0 var(--base-music-height, auto);
+    }
+
+    .lower-grid.story-expanded .side-stack-right .tag-widget {
+      flex: 0 0 var(--base-tag-height, auto);
+    }
+
+    .lower-grid.story-expanded .story-filler {
+      display: flex;
+    }
+
+    .lower-grid.story-expanded .story-grid {
+      grid-template-rows:
+        repeat(
+          var(--story-count, 5),
+          var(--base-story-row-height, 104px)
+        ) !important;
+      align-content: start;
+    }
+
+    .story-filler-head {
+      display: flex;
+      flex: 0 0 auto;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+
+    .story-filler-sub {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 5.8px;
+      font-weight: 800;
+      letter-spacing: .11em;
+    }
+
+    .symbol-word-list {
+      display: grid;
+      min-height: 0;
+      height: 100%;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      grid-template-rows:
+        repeat(
+          var(--symbol-word-rows, 1),
+          minmax(0,1fr)
+        );
+      gap: 6px;
+    }
+
+    .symbol-word-card {
+      min-width: 0;
+      min-height: 0;
+      padding: 7px 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.34);
+      border-radius: 12px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(var(--surface-rgb),.45),
+          rgba(var(--accent-rgb),.12)
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.42);
+    }
+
+    .symbol-word-title-line {
+      display: flex;
+      min-width: 0;
+      align-items: baseline;
+      gap: 5px;
+    }
+
+    .symbol-word-title {
+      overflow: hidden;
+      font-size: 8.4px;
+      font-weight: 950;
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .symbol-word-sub {
+      overflow: hidden;
+      color: var(--accent-deep);
+      font-size: 5.8px;
+      font-weight: 850;
+      line-height: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .symbol-word-description {
+      display: -webkit-box;
+      margin: 4px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 6.3px;
+      font-weight: 600;
+      line-height: 1.32;
+      overflow-wrap: anywhere;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .symbol-color-list {
+      display: grid;
+      min-height: 0;
+      height: 100%;
+      grid-template-rows: repeat(3,minmax(0,1fr));
+      gap: 5px;
+    }
+
+    .symbol-color-row {
+      display: grid;
+      min-height: 0;
+      padding: 5px 7px;
+      border: 1px solid rgba(255,255,255,.32);
+      border-radius: 11px;
+      align-items: center;
+      grid-template-columns: 29px minmax(0,1fr);
+      gap: 8px;
+      background: rgba(var(--surface-rgb),.22);
+    }
+
+    .symbol-color-chip {
+      display: block;
+      width: 29px;
+      height: 100%;
+      min-height: 19px;
+      border: 1px solid rgba(255,255,255,.48);
+      border-radius: 8px;
+      box-shadow:
+        0 3px 9px rgba(var(--deep-rgb),.1),
+        inset 0 1px 0 rgba(255,255,255,.25);
+    }
+
+    .symbol-color-row strong {
+      display: block;
+      overflow: hidden;
+      font-size: 7.2px;
+      font-weight: 900;
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .symbol-color-row small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 5.2px;
+      font-weight: 800;
+      letter-spacing: .08em;
     }
 
     .mini-btn:disabled,
     .add-btn:disabled {
       cursor: not-allowed;
       opacity: .38;
-      filter: grayscale(.3);
     }
 
-    .fixed-story-note {
-      margin: 0 0 10px;
-      padding: 9px 11px;
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: 11px;
-      color: var(--editor-muted);
-      background: rgba(255,255,255,.035);
-      font-size: 11px;
-      line-height: 1.5;
-    }
 
-    #captureArea .lower-grid {
+    /* =====================================================
+       PAIR DICTIONARY + PAIR ILLUSTRATION
+    ====================================================== */
+
+    .symbol-word-list {
       grid-template-columns: minmax(0,1fr) !important;
-      gap: 0 !important;
-    }
-
-    #captureArea .side-stack-left,
-    #captureArea .side-stack-right {
-      display: none !important;
-    }
-
-    #captureArea .story-board {
-      grid-column: 1 / -1;
-      width: 100%;
-      height: 100%;
-      padding: 13px;
-    }
-
-    #captureArea .story-board-head {
-      margin-bottom: 9px;
-    }
-
-    #captureArea .story-grid {
-      --axis-width: 46px;
-      --story-gap-y: 9px;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr)) !important;
       grid-template-rows:
         repeat(
-          var(--story-rows, 3),
+          var(--symbol-word-count, 1),
           minmax(0,1fr)
         ) !important;
-      grid-auto-flow: column;
-      gap: var(--story-gap-y) 12px !important;
-      min-height: 0;
-      height: 100%;
-      align-items: stretch;
-    }
-
-    #captureArea .story-grid::before,
-    #captureArea .story-grid::after {
-      content: "";
-      position: absolute;
-      top: 12px;
-      bottom: 8px;
-      z-index: 0;
-      width: 2px;
-      border-radius: 999px;
-      background: rgba(var(--deep-rgb),.57) !important;
-      transform: translateX(-50%);
-      pointer-events: none;
-    }
-
-    #captureArea .story-grid::before {
-      left: calc(var(--axis-width) / 2);
-    }
-
-    #captureArea .story-grid::after {
-      left:
-        calc(
-          50% +
-          6px +
-          var(--axis-width) / 2
-        );
-    }
-
-    #captureArea .story-row {
-      display: grid;
-      grid-template-columns:
-        var(--axis-width)
-        minmax(0,1fr);
       gap: 6px;
-      width: 100%;
-      min-width: 0;
+    }
+
+    .symbol-word-card {
+      display: flex;
       min-height: 0;
-      height: 100%;
-      align-items: stretch;
+      padding: 8px 10px;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    #captureArea .story-axis {
-      min-height: 0;
-      padding: 4px 0;
+    .symbol-word-title {
+      font-size: 9px;
     }
 
-    #captureArea .story-index {
-      width: 33px;
-      height: 33px;
-      font-size: 8px;
+    .symbol-word-sub {
+      font-size: 6.2px;
     }
 
-    #captureArea .story-card {
-      min-height: 0;
-      height: 100%;
-    }
-
-    #captureArea .story-content {
-      height: 100%;
-      padding: 10px 13px 11px;
-    }
-
-    #captureArea .story-time {
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * .86
-        );
-    }
-
-    #captureArea .story-content h3 {
+    .symbol-word-description {
       margin-top: 4px;
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * 1.30
-        );
-      line-height: 1.32;
-    }
-
-    #captureArea .story-content p {
-      margin-top: 6px;
-      font-size: var(--story-font-size, 8px);
-      line-height: 1.44;
-      -webkit-line-clamp: 5;
-    }
-
-    /* 8~10개: 2열 × 4~5행 */
-    #captureArea .story-grid.density-compact {
-      --axis-width: 42px;
-      --story-gap-y: 7px;
-    }
-
-    #captureArea .story-grid.density-compact .story-index {
-      width: 30px;
-      height: 30px;
-      font-size: 7.3px;
-    }
-
-    #captureArea .story-grid.density-compact .story-content {
-      padding: 8px 11px 9px;
-    }
-
-    #captureArea .story-grid.density-compact .story-time {
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * .76
-        );
-    }
-
-    #captureArea .story-grid.density-compact .story-content h3 {
-      margin-top: 3px;
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * 1.12
-        );
-      line-height: 1.22;
-    }
-
-    #captureArea .story-grid.density-compact .story-content p {
-      margin-top: 4px;
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * .88
-        );
-      line-height: 1.34;
+      font-size: 6.5px;
+      line-height: 1.35;
       -webkit-line-clamp: 3;
     }
 
-    /* 11~14개: 2열 × 6~7행 */
-    #captureArea .story-grid.density-ultra {
-      --axis-width: 36px;
-      --story-gap-y: 5px;
+    .symbol-word-list[data-count="1"]
+    .symbol-word-card {
+      padding: 13px 14px;
     }
 
-    #captureArea .story-grid.density-ultra .story-row {
-      gap: 4px;
+    .symbol-word-list[data-count="1"]
+    .symbol-word-title {
+      font-size: 11.5px;
     }
 
-    #captureArea .story-grid.density-ultra .story-axis {
-      padding: 2px 0;
+    .symbol-word-list[data-count="1"]
+    .symbol-word-sub {
+      font-size: 7.3px;
     }
 
-    #captureArea .story-grid.density-ultra .story-index {
-      width: 27px;
-      height: 27px;
-      font-size: 6.6px;
-      border-radius: 9px;
+    .symbol-word-list[data-count="1"]
+    .symbol-word-description {
+      margin-top: 7px;
+      font-size: 7.8px;
+      line-height: 1.45;
+      -webkit-line-clamp: 5;
     }
 
-    #captureArea .story-grid.density-ultra .story-content {
-      padding: 6px 9px 7px;
+    .symbol-word-list[data-count="2"]
+    .symbol-word-title {
+      font-size: 10px;
     }
 
-    #captureArea .story-grid.density-ultra .story-time {
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * .66
-        );
+    .symbol-word-list[data-count="2"]
+    .symbol-word-description {
+      font-size: 7px;
+      -webkit-line-clamp: 3;
     }
 
-    #captureArea .story-grid.density-ultra .story-content h3 {
-      margin-top: 2px;
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * .92
-        );
-      line-height: 1.15;
+    .symbol-word-list[data-count="4"]
+    .symbol-word-card {
+      padding-top: 6px;
+      padding-bottom: 6px;
     }
 
-    #captureArea .story-grid.density-ultra .story-content p {
+    .symbol-word-list[data-count="4"]
+    .symbol-word-description {
       margin-top: 3px;
-      font-size:
-        calc(
-          var(--story-font-size, 8px) * .73
-        );
-      line-height: 1.24;
+      font-size: 6px;
+      line-height: 1.25;
       -webkit-line-clamp: 2;
+    }
+
+    .story-illustration-widget {
+      padding: 8px;
+    }
+
+    .story-illustration-frame {
+      position: relative;
+      width: 100%;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 14px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(var(--surface-rgb),.34),
+          rgba(var(--accent-rgb),.12)
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.36);
+    }
+
+    .story-illustration-frame img {
+      position: absolute;
+      inset: 0;
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      will-change: transform, filter;
+    }
+
+    .story-illustration-placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      border: 0;
+      place-items: center;
+      color: rgba(var(--deep-rgb),.46);
+      background: transparent;
+      font-size: 7px;
+      font-weight: 900;
+      letter-spacing: .12em;
+    }
+
+    .story-illustration-caption {
+      position: absolute;
+      left: 9px;
+      bottom: 8px;
+      z-index: 2;
+      color: rgba(255,255,255,.9);
+      text-shadow:
+        0 1px 2px rgba(0,0,0,.48),
+        0 0 5px rgba(0,0,0,.24);
+      pointer-events: none;
+    }
+
+    .story-illustration-caption span {
+      display: block;
+      font-size: 6.4px;
+      font-weight: 900;
+      letter-spacing: .1em;
+    }
+
+    .story-illustration-caption small {
+      display: block;
+      margin-top: 2px;
+      font-size: 5px;
+      font-weight: 750;
+      letter-spacing: .08em;
+      opacity: .78;
+    }
+
+    .story-illustration-frame .image-credit {
+      right: 8px;
+      bottom: 7px;
+      z-index: 3;
+    }
+
+
+    #captureArea .profile-intro,
+    #captureArea .profile-quote {
+      color: var(--ink) !important;
+    }
+
+
+    #captureArea .symbol-text {
+      color: var(--ink) !important;
+      font-weight: 600;
+    }
+
+
+    #addSymbolWordBtn {
+      margin-top: 8px;
+    }
+
+    [data-symbol-word-editor]
+    .small-actions {
+      flex: 0 0 auto;
+    }
+
+
+    /* =====================================================
+       DYNAMIC MEMO / SYMBOL HEIGHT
+    ====================================================== */
+
+    #captureArea .side-stack-left .relation-widget {
+      height: auto;
+      min-height: 0;
+      flex: 0 0 auto;
+    }
+
+    #captureArea .side-stack-left .relation-list {
+      height: auto;
+      min-height: 0;
+    }
+
+    #captureArea .side-stack-left .speech-style-row
+    .relation-value {
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+      -webkit-box-orient: initial;
+    }
+
+    #captureArea .side-stack-left .symbol-widget {
+      min-height: 68px;
+      flex: 1 1 auto;
+    }
+
+    #captureArea .lower-grid.story-expanded
+    .side-stack-left {
+      display: grid;
+      grid-template-rows:
+        auto
+        minmax(68px,1fr)
+        var(--story-filler-height,100px);
+      gap: 9px;
+    }
+
+    #captureArea .lower-grid.story-expanded
+    .side-stack-right {
+      display: grid;
+      grid-template-rows:
+        minmax(0,1fr)
+        auto
+        var(--story-filler-height,100px);
+      gap: 9px;
+    }
+
+    #captureArea .lower-grid.story-expanded
+    .side-stack-left .relation-widget,
+    #captureArea .lower-grid.story-expanded
+    .side-stack-left .symbol-widget,
+    #captureArea .lower-grid.story-expanded
+    .side-stack-left .story-filler,
+    #captureArea .lower-grid.story-expanded
+    .side-stack-right .music-widget,
+    #captureArea .lower-grid.story-expanded
+    .side-stack-right .tag-widget,
+    #captureArea .lower-grid.story-expanded
+    .side-stack-right .story-filler {
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      flex: none;
+    }
+
+
+    #captureArea .story-grid::before {
+      bottom: 16px !important;
+    }
+
+
+    .mini-btn:disabled,
+    .add-btn:disabled {
+      cursor: not-allowed;
+      opacity: .38;
+    }
+
+
+    #captureArea .song-play-static {
+      cursor: default;
+      pointer-events: none;
+    }
+
+
+    #captureArea .song-row .song-play-static {
+      display: grid;
+      place-items: center;
     }
 
 </style>
@@ -2655,7 +3027,7 @@
             <textarea id="pairQuote" maxlength="280"></textarea>
           </div>
 
-          <div class="field pair-tags-field">
+          <div class="field">
             <label>페어 태그</label>
             <div class="tag-editor" id="pairTagEditor"></div>
 
@@ -2679,7 +3051,7 @@
             <label for="heroCredit">커미션주 / 출처 표기</label>
             <input id="heroCredit" type="text" maxlength="70" placeholder="@commissioner" />
             <span class="mini-label">
-              인물·메인·심볼 크레딧은 저장 이미지 오른쪽 아래에 한꺼번에 표시됩니다.
+              인물·메인·배경·심볼 크레딧은 저장 이미지 오른쪽 아래에 한꺼번에 표시됩니다.
             </span>
           </div>
 
@@ -2720,6 +3092,16 @@
             >
               배경 이미지 제거
             </button>
+          </div>
+
+          <div class="field">
+            <label for="wallpaperCredit">전체 배경 커미션주 / 출처 표기</label>
+            <input
+              id="wallpaperCredit"
+              type="text"
+              maxlength="70"
+              placeholder="@commissioner"
+            />
           </div>
 
           <div class="two-col">
@@ -2775,6 +3157,16 @@
             </button>
           </div>
 
+          <div class="field">
+            <label for="lowerBackgroundCredit">하단 배경 커미션주 / 출처 표기</label>
+            <input
+              id="lowerBackgroundCredit"
+              type="text"
+              maxlength="70"
+              placeholder="@commissioner"
+            />
+          </div>
+
           <div class="two-col">
             <div class="field">
               <label for="lowerBackgroundOpacity">투명도</label>
@@ -2819,7 +3211,7 @@
         <div class="section-body" id="charBEditor"></div>
       </details>
 
-      <details class="editor-section removed-editor-section">
+      <details class="editor-section" open>
         <summary>관계 메모</summary>
         <div class="section-body">
           <div class="field">
@@ -2854,12 +3246,18 @@
         </div>
       </details>
 
-      <details class="editor-section removed-editor-section">
+      <details class="editor-section" open>
         <summary>둘의 상징</summary>
         <div class="section-body">
           <div class="field">
             <label for="symbolText">상징 문구 / 설명</label>
-            <textarea id="symbolText" maxlength="300"></textarea>
+            <textarea
+              id="symbolText"
+              placeholder="둘을 상징하는 문구나 설명을 자유롭게 적어 주세요."
+            ></textarea>
+            <span class="mini-label">
+              글자 수 제한 없이 자유롭게 입력할 수 있습니다.
+            </span>
           </div>
 
           <div class="field">
@@ -2883,8 +3281,25 @@
               <input id="symbolY" type="range" min="0" max="100" />
             </div>
           </div>
+
+          <div class="field">
+            <label for="symbolBlur">
+              상징 이미지 흐리기
+              <span id="symbolBlurValue" style="float:right;">0px</span>
+            </label>
+            <input
+              id="symbolBlur"
+              type="range"
+              min="0"
+              max="20"
+              step="1"
+            />
+          </div>
         </div>
       </details>
+
+
+      
 
       <details class="editor-section" open>
         <summary>서사 블럭</summary>
@@ -2903,20 +3318,169 @@
             />
           </div>
 
-          <p class="fixed-story-note">
-            서사 블럭은 최소 4개부터 최대 14개까지 사용할 수 있습니다.
-            블럭 수에 맞춰 2열 구조와 각 블럭 높이가 자동으로 조정됩니다.
-          </p>
           <div id="storyEditorList" class="editor-list"></div>
           <button class="add-btn" id="addStoryBtn" type="button">＋ 서사 블럭 1개 추가</button>
         </div>
       </details>
 
-      <details class="editor-section removed-editor-section">
+<details class="editor-section" open>
+        <summary>추가 서사 여백 장식 · 5~6개용</summary>
+        <div class="section-body">
+          <p class="mini-label" style="margin:0 0 10px;">
+            서사가 5개 이상일 때 기존 4개 블럭의 크기를 유지하며,
+            왼쪽에는 페어 사전, 오른쪽에는 자유 일러스트 패널이 나타납니다.
+          </p>
+
+          <div id="symbolWordEditorList" class="editor-list"></div>
+
+          <button
+            class="add-btn"
+            id="addSymbolWordBtn"
+            type="button"
+          >
+            ＋ 단어 블럭 1개 추가
+          </button>
+
+          <p class="mini-label" style="margin:8px 0 0;">
+            단어 블럭은 최소 1개부터 최대 4개까지 사용할 수 있습니다.
+          </p>
+
+          <div class="editor-card">
+            <div class="editor-card-title">오른쪽 페어 일러스트</div>
+
+            <div class="two-col">
+              <div class="field">
+                <label for="sideIllustrationTitle">
+                  상단 제목
+                </label>
+                <input
+                  id="sideIllustrationTitle"
+                  type="text"
+                  maxlength="50"
+                  placeholder="PAIR ILLUSTRATION"
+                />
+              </div>
+
+              <div class="field">
+                <label for="sideIllustrationSubtitle">
+                  하단 부제
+                </label>
+                <input
+                  id="sideIllustrationSubtitle"
+                  type="text"
+                  maxlength="70"
+                  placeholder="ANOTHER PIECE OF US"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="sideIllustrationUpload">
+                SD 또는 자유 페어 일러스트
+              </label>
+              <input
+                id="sideIllustrationUpload"
+                type="file"
+                accept="image/*"
+              />
+              <span
+                class="mini-label"
+                id="sideIllustrationFileName"
+              >
+                선택된 이미지가 없습니다.
+              </span>
+            </div>
+
+            <button
+              class="mini-btn danger"
+              id="clearSideIllustrationBtn"
+              type="button"
+            >
+              이미지 제거
+            </button>
+
+            <div class="field">
+              <label for="sideIllustrationCredit">
+                일러스트 커미션주 / 출처
+              </label>
+              <input
+                id="sideIllustrationCredit"
+                type="text"
+                maxlength="70"
+                placeholder="@commissioner"
+              />
+            </div>
+
+            <div class="two-col">
+              <div class="field">
+                <label for="sideIllustrationX">가로 위치</label>
+                <input
+                  id="sideIllustrationX"
+                  type="range"
+                  min="0"
+                  max="100"
+                />
+              </div>
+
+              <div class="field">
+                <label for="sideIllustrationY">세로 위치</label>
+                <input
+                  id="sideIllustrationY"
+                  type="range"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="sideIllustrationZoom">
+                확대
+                <span
+                  id="sideIllustrationZoomValue"
+                  style="float:right;"
+                >
+                  100%
+                </span>
+              </label>
+              <input
+                id="sideIllustrationZoom"
+                type="range"
+                min="100"
+                max="200"
+                step="1"
+              />
+            </div>
+
+            <div class="field">
+              <label for="sideIllustrationBlur">
+                흐리기
+                <span
+                  id="sideIllustrationBlurValue"
+                  style="float:right;"
+                >
+                  0px
+                </span>
+              </label>
+              <input
+                id="sideIllustrationBlur"
+                type="range"
+                min="0"
+                max="20"
+                step="1"
+              />
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="editor-section" open>
         <summary>테마곡</summary>
         <div class="section-body">
           <div id="songEditorList" class="editor-list"></div>
-          <button class="add-btn" id="addSongBtn" type="button">＋ 테마곡 1개 추가</button>
+          <p class="mini-label" style="margin:8px 0 0;">
+            페어곡 1개와 인물별 테마곡 2개, 총 3곡으로 고정됩니다.
+          </p>
         </div>
       </details>
 
@@ -2977,7 +3541,7 @@
 
     <section class="stage">
       <p class="stage-note">
-        하단 전체를 사용하는 2열 × 3행 서사 아카이브 버전입니다.
+        서사 영역은 고정된 높이 안에서 블럭 수에 맞춰 조정되며, 선과 점은 블럭 바깥에 표시됩니다.
       </p>
 
       <div class="preview-wrap">
@@ -2994,7 +3558,7 @@
               <span class="menu-logo">● Pair Studio</span>
               <span class="menu-item">Archive</span>
               <span class="menu-item">Story</span>
-              <span class="menu-item">Fragments</span>
+              <span class="menu-item">Music</span>
             </div>
 
             <div class="menu-right">
@@ -3126,6 +3690,17 @@
                 </div>
 
               </section>
+
+              <section class="story-filler story-word-widget glass-panel">
+                <div class="story-filler-head">
+                  <div>
+                    <div class="widget-eyebrow">PAIR DICTIONARY</div>
+                    <div class="story-filler-sub">WORDS ONLY WE SHARE</div>
+                  </div>
+                </div>
+
+                <div class="symbol-word-list" id="symbolWordList"></div>
+              </section>
             </aside>
 
             <section class="story-board glass-panel">
@@ -3160,6 +3735,39 @@
               <section class="tag-widget glass-panel">
                 <div class="widget-eyebrow">KEYWORDS</div>
                 <div class="tag-list" id="tagList"></div>
+              </section>
+
+              <section class="story-filler story-illustration-widget glass-panel">
+                <div class="story-illustration-frame">
+                  <div
+                    class="image-placeholder story-illustration-placeholder"
+                    id="sideIllustrationPlaceholder"
+                  >
+                    PAIR ILLUSTRATION
+                  </div>
+
+                  <img
+                    id="sideIllustrationImage"
+                    alt=""
+                  />
+
+                  <div
+                    class="story-illustration-caption"
+                    id="sideIllustrationCaption"
+                  >
+                    <span id="sideIllustrationTitleView">
+                      PAIR ILLUSTRATION
+                    </span>
+                    <small id="sideIllustrationSubtitleView">
+                      ANOTHER PIECE OF US
+                    </small>
+                  </div>
+
+                  <div
+                    class="image-credit"
+                    id="sideIllustrationCreditView"
+                  ></div>
+                </div>
               </section>
             </aside>
           </div>
@@ -3207,7 +3815,7 @@
         wallA: "#675573",
         wallB: "#d8c8e4",
         accent: "#9a7caf",
-        deep: "#604a70",
+        deep: "#1b002e",
         surface: "#fbf7fd",
         ink: "#35293e"
       },
@@ -3408,45 +4016,31 @@
       const stories = [
         {
           id: nextId(),
-          time: "상영관 0번의 기억",
-          title: "Opening Shot",
+          time: "상영관 0번의 관객",
+          title: "OPENING SHOT",
           description:
             "낯선 장소에서 두 사람이 우연히 마주쳤습니다. 짧은 대화였지만 그날 이후 서로의 이름은 쉽게 잊히지 않았습니다. 처음에는 서로가 특별해질 것이라고 생각하지 않았으나, 사소한 기억이 차곡차곡 쌓이기 시작했습니다."
         },
         {
           id: nextId(),
-          time: "등장인물은 사랑을 요구한다",
-          title: "Inciting Incident",
+          time: "등장인물이 독자에게 사랑을 묻다",
+          title: "INCITING INCIDENT",
           description:
             "계속 엇갈리던 두 사람이 마침내 같은 목표를 향해 한 걸음씩 나아가기 시작합니다. 말하지 못했던 감정과 오해를 하나씩 꺼내 놓으면서 이전보다 조금 더 가까운 관계가 됩니다."
         },
         {
           id: nextId(),
           time: "가족이라는 이름의 구속",
-          title: "Fourth Wall Distortion",
+          title: "FOURTH WALL DISTORTION",
           description:
             "완벽한 결말 대신 함께 살아갈 날들을 선택합니다. 이전과는 다른 방식으로 서로의 곁을 지키기로 하고, 아직 오지 않은 계절을 둘이서 천천히 맞이합니다."
         },
         {
           id: nextId(),
           time: "기억을 잃은 채 다시 만난 최애",
-          title: "Confrontation Scene",
+          title: "CONFRONTATION SCENE",
           description:
             "오랫동안 숨겨 두었던 기억을 서로에게 털어놓습니다. 모든 것이 즉시 해결되지는 않지만, 두 사람은 처음으로 같은 문제를 함께 바라보게 됩니다."
-        },
-        {
-          id: nextId(),
-          time: "동등한 자리에서 함께 추락하다",
-          title: "Climax",
-          description:
-            "결말을 지나온 두 사람은 이전과는 다른 방식으로 서로의 곁을 지킵니다. 사라지지 않은 기억과 남겨진 감정은 새로운 일상의 형태가 됩니다."
-        },
-        {
-          id: nextId(),
-          time: "돌아갈 곳과 돌아오고 싶은 곳",
-          title: "Narrative Reset",
-          description:
-            "완벽하게 정리된 결말 대신 함께 살아갈 다음 장면을 선택합니다. 두 사람의 이야기는 끝나는 대신, 아직 오지 않은 시간 속으로 이어집니다."
         }
       ];
 
@@ -3456,24 +4050,24 @@
           title: "A Song for Us",
           artist: "Pair Theme",
           cover: "",
-          audioUrl: "",
-          audioName: ""
+          coverX: 50,
+          coverY: 50
         },
         {
           id: nextId(),
           title: "Jaheon’s Theme",
           artist: "Character A Theme",
           cover: "",
-          audioUrl: "",
-          audioName: ""
+          coverX: 50,
+          coverY: 50
         },
         {
           id: nextId(),
           title: "Heesol’s Theme",
           artist: "Character B Theme",
           cover: "",
-          audioUrl: "",
-          audioName: ""
+          coverX: 50,
+          coverY: 50
         }
       ];
 
@@ -3493,6 +4087,7 @@
         heroZoom: 110,
 
         wallpaperImage: "",
+        wallpaperCredit: "",
         wallpaperOpacity: 78,
         wallpaperBlur: 0,
         wallpaperX: 50,
@@ -3500,6 +4095,7 @@
         wallpaperZoom: 108,
 
         lowerBackgroundImage: "",
+        lowerBackgroundCredit: "",
         lowerBackgroundOpacity: 78,
         lowerBackgroundBlur: 0,
         lowerBackgroundX: 50,
@@ -3520,23 +4116,360 @@
 
         storyFontSize: 8,
 
+        symbolWords: [
+          {
+            title: "백일몽",
+            sub: "白日夢",
+            description:
+              "한낮에 깨어 있는 상태에서 헛된 공상이나 환상에 잠기는 일."
+          }
+        ],
+
+        sideIllustrationImage: "",
+        sideIllustrationTitle: "PAIR ILLUSTRATION",
+        sideIllustrationSubtitle: "ANOTHER PIECE OF US",
+        sideIllustrationCredit: "",
+        sideIllustrationX: 50,
+        sideIllustrationY: 50,
+        sideIllustrationZoom: 100,
+        sideIllustrationBlur: 0,
+
         symbolText: "자정의 시간",
         symbolImage: "",
         symbolCredit: "",
         symbolX: 50,
         symbolY: 50,
+        symbolBlur: 0,
 
         charA: createCharacter("A"),
         charB: createCharacter("B"),
 
         stories,
-        songs,
-        activeSongId: songs[0].id
+        songs
       };
     }
 
     let state = defaultState();
-    let currentAudio = null;
+    const originalImageFiles = new Map();
+
+    function rememberOriginalImage(key, file) {
+      if (!key || !(file instanceof File)) {
+        return;
+      }
+
+      originalImageFiles.set(key, file);
+    }
+
+    function forgetOriginalImage(key) {
+      originalImageFiles.delete(key);
+    }
+
+    function clearOriginalImages() {
+      originalImageFiles.clear();
+    }
+
+    function getRenderableImageSlots() {
+      const slots = [
+        {
+          key: "heroImage",
+          get: () => state.heroImage,
+          set: (value) => {
+            state.heroImage = value;
+          }
+        },
+        {
+          key: "wallpaperImage",
+          get: () => state.wallpaperImage,
+          set: (value) => {
+            state.wallpaperImage = value;
+          }
+        },
+        {
+          key: "lowerBackgroundImage",
+          get: () => state.lowerBackgroundImage,
+          set: (value) => {
+            state.lowerBackgroundImage = value;
+          }
+        },
+        {
+          key: "sideIllustrationImage",
+          get: () => state.sideIllustrationImage,
+          set: (value) => {
+            state.sideIllustrationImage = value;
+          }
+        },
+        {
+          key: "symbolImage",
+          get: () => state.symbolImage,
+          set: (value) => {
+            state.symbolImage = value;
+          }
+        },
+        {
+          key: "charA.image",
+          get: () => state.charA?.image || "",
+          set: (value) => {
+            if (state.charA) {
+              state.charA.image = value;
+            }
+          }
+        },
+        {
+          key: "charB.image",
+          get: () => state.charB?.image || "",
+          set: (value) => {
+            if (state.charB) {
+              state.charB.image = value;
+            }
+          }
+        }
+      ];
+
+      (state.songs || [])
+        .slice(0, 3)
+        .forEach((song) => {
+          slots.push({
+            key: `song:${song.id}:cover`,
+            get: () => song.cover || "",
+            set: (value) => {
+              song.cover = value;
+            }
+          });
+        });
+
+      return slots;
+    }
+
+    function extensionForMime(type = "") {
+      const extensions = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif",
+        "image/avif": "avif"
+      };
+
+      return extensions[type] || "img";
+    }
+
+    function safeUploadFilename(file, key) {
+      const originalName =
+        file?.name ||
+        `${key}.${extensionForMime(file?.type)}`;
+
+      const cleaned = originalName
+        .normalize("NFKC")
+        .replace(/[^\p{L}\p{N}._-]+/gu, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(-120);
+
+      return cleaned ||
+        `${key}.${extensionForMime(file?.type)}`;
+    }
+
+    function randomUploadId() {
+      if (crypto?.randomUUID) {
+        return crypto.randomUUID();
+      }
+
+      return (
+        Date.now().toString(36) +
+        "-" +
+        Math.random().toString(36).slice(2)
+      );
+    }
+
+    async function dataUrlToFile(
+      dataUrl,
+      filename
+    ) {
+      const response = await fetch(dataUrl);
+
+      if (!response.ok) {
+        throw new Error(
+          "미리보기 이미지를 업로드용 파일로 변환하지 못했습니다."
+        );
+      }
+
+      const blob = await response.blob();
+
+      return new File(
+        [blob],
+        filename,
+        {
+          type:
+            blob.type ||
+            "image/webp",
+          lastModified: Date.now()
+        }
+      );
+    }
+
+    async function waitForBlobUploader(
+      timeoutMs = 15_000
+    ) {
+      if (
+        typeof window.__pairArchiveBlobUpload ===
+        "function"
+      ) {
+        return window.__pairArchiveBlobUpload;
+      }
+
+      return new Promise((resolve, reject) => {
+        let settled = false;
+
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+
+          if (
+            typeof window.__pairArchiveBlobUpload ===
+            "function"
+          ) {
+            resolve(
+              window.__pairArchiveBlobUpload
+            );
+          } else {
+            reject(
+              new Error(
+                "Vercel Blob 업로드 모듈을 불러오지 못했습니다. 네트워크 연결을 확인해 주세요."
+              )
+            );
+          }
+        };
+
+        const timer = setTimeout(
+          finish,
+          timeoutMs
+        );
+
+        window.addEventListener(
+          "pair-archive-blob-ready",
+          finish,
+          {
+            once: true
+          }
+        );
+      });
+    }
+
+    async function uploadRenderImages(
+      onProgress
+    ) {
+      const upload =
+        await waitForBlobUploader();
+
+      const slots = getRenderableImageSlots()
+        .filter((slot) => Boolean(slot.get()));
+
+      const uploads = [];
+
+      for (
+        let index = 0;
+        index < slots.length;
+        index += 1
+      ) {
+        const slot = slots[index];
+        const currentValue = slot.get();
+
+        onProgress?.(
+          index,
+          slots.length,
+          slot.key
+        );
+
+        let file =
+          originalImageFiles.get(slot.key);
+
+        if (!file) {
+          if (
+            typeof currentValue !== "string" ||
+            !currentValue.startsWith("data:")
+          ) {
+            continue;
+          }
+
+          file = await dataUrlToFile(
+            currentValue,
+            `${slot.key.replaceAll(":", "-")}.webp`
+          );
+        }
+
+        const filename =
+          safeUploadFilename(
+            file,
+            slot.key
+          );
+
+        const pathname =
+          [
+            "pair-archive-temp",
+            Date.now(),
+            randomUploadId(),
+            filename
+          ].join("/");
+
+        const blob = await upload(
+          pathname,
+          file,
+          {
+            access: "public",
+            handleUploadUrl:
+              "/api/upload",
+            multipart:
+              file.size >
+              4 * 1024 * 1024
+          }
+        );
+
+        uploads.push({
+          slot,
+          url: blob.url
+        });
+      }
+
+      onProgress?.(
+        slots.length,
+        slots.length,
+        ""
+      );
+
+      return uploads;
+    }
+
+    async function cleanupTemporaryBlobs(
+      urls
+    ) {
+      const cleanUrls = Array.from(
+        new Set(
+          (urls || []).filter(Boolean)
+        )
+      );
+
+      if (!cleanUrls.length) {
+        return;
+      }
+
+      try {
+        await fetch("/api/upload", {
+          method: "DELETE",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            urls: cleanUrls
+          })
+        });
+      } catch (error) {
+        console.warn(
+          "임시 Blob 정리에 실패했습니다.",
+          error
+        );
+      }
+    }
+
     let exportObjectUrl = "";
     let exportFilename = "pair-archive.png";
 
@@ -3584,6 +4517,17 @@
       symbolCreditView: $("#symbolCreditView"),
       symbolTextView: $("#symbolTextView"),
 
+      symbolWordEditorList: $("#symbolWordEditorList"),
+      symbolWordList: $("#symbolWordList"),
+
+      sideIllustrationImage: $("#sideIllustrationImage"),
+      sideIllustrationPlaceholder: $("#sideIllustrationPlaceholder"),
+      sideIllustrationCaption: $("#sideIllustrationCaption"),
+      sideIllustrationTitleView: $("#sideIllustrationTitleView"),
+      sideIllustrationSubtitleView: $("#sideIllustrationSubtitleView"),
+      sideIllustrationCreditView: $("#sideIllustrationCreditView"),
+      sideIllustrationFileName: $("#sideIllustrationFileName"),
+
       pairTagEditor: $("#pairTagEditor"),
       pairTagInput: $("#pairTagInput"),
       tagList: $("#tagList"),
@@ -3613,6 +4557,8 @@
       ["anniversary", "anniversary"],
       ["pairQuote", "pairQuote"],
       ["heroCredit", "heroCredit"],
+      ["wallpaperCredit", "wallpaperCredit"],
+      ["lowerBackgroundCredit", "lowerBackgroundCredit"],
       ["firstImpression", "firstImpression"],
       ["currentRelation", "currentRelation"],
       ["jaheonCalls", "jaheonCalls"],
@@ -3620,7 +4566,10 @@
       ["charASpeechStyle", "charASpeechStyle"],
       ["charBSpeechStyle", "charBSpeechStyle"],
       ["symbolText", "symbolText"],
-      ["symbolCredit", "symbolCredit"]
+      ["symbolCredit", "symbolCredit"],
+      ["sideIllustrationCredit", "sideIllustrationCredit"],
+      ["sideIllustrationTitle", "sideIllustrationTitle"],
+      ["sideIllustrationSubtitle", "sideIllustrationSubtitle"]
     ];
 
     function escapeHtml(value = "") {
@@ -3629,6 +4578,141 @@
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;");
+    }
+
+    function plainTextToStoryHtml(value = "") {
+      return escapeHtml(value)
+        .replace(/\r?\n/g, "<br>");
+    }
+
+    function sanitizeStoryHtml(value = "") {
+      const source = document.createElement("div");
+      source.innerHTML = String(value || "");
+
+      function cleanNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return escapeHtml(
+            (node.nodeValue || "")
+              .replaceAll("\u200B", "")
+          );
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return "";
+        }
+
+        const tag = node.tagName.toLowerCase();
+
+        if (tag === "script" || tag === "style") {
+          return "";
+        }
+
+        const children = [...node.childNodes]
+          .map(cleanNode)
+          .join("");
+
+        if (tag === "br") {
+          return "<br>";
+        }
+
+        if (tag === "strong" || tag === "b") {
+          return `<strong>${children}</strong>`;
+        }
+
+        if (tag === "em" || tag === "i") {
+          return `<em>${children}</em>`;
+        }
+
+        if (tag === "div" || tag === "p") {
+          return `${children}<br>`;
+        }
+
+        return children;
+      }
+
+      return [...source.childNodes]
+        .map(cleanNode)
+        .join("")
+        .replace(/(?:<br>\s*){3,}/g, "<br><br>")
+        .replace(/^(?:<br>\s*)+/g, "");
+    }
+
+
+    function insertStoryLineBreak(editor) {
+      const selection = window.getSelection();
+
+      if (
+        !selection ||
+        !selection.rangeCount
+      ) {
+        return;
+      }
+
+      const range =
+        selection.getRangeAt(0);
+
+      if (
+        !editor.contains(
+          range.commonAncestorContainer
+        )
+      ) {
+        return;
+      }
+
+      range.deleteContents();
+
+      const lineBreak =
+        document.createElement("br");
+
+      const caretMarker =
+        document.createTextNode("\u200B");
+
+      range.insertNode(lineBreak);
+      lineBreak.after(caretMarker);
+
+      const nextRange =
+        document.createRange();
+
+      nextRange.setStart(
+        caretMarker,
+        caretMarker.length
+      );
+
+      nextRange.collapse(true);
+
+      selection.removeAllRanges();
+      selection.addRange(nextRange);
+
+      editor.dispatchEvent(
+        new InputEvent("input", {
+          bubbles: true,
+          inputType: "insertLineBreak",
+          data: null
+        })
+      );
+    }
+
+    function getStoryHtml(story) {
+      if (
+        story &&
+        typeof story.descriptionHtml === "string"
+      ) {
+        return sanitizeStoryHtml(
+          story.descriptionHtml
+        );
+      }
+
+      return plainTextToStoryHtml(
+        story?.description || ""
+      );
+    }
+
+    function storyHtmlToPlainText(value = "") {
+      const holder = document.createElement("div");
+      holder.innerHTML = sanitizeStoryHtml(value)
+        .replaceAll("<br>", "\n");
+
+      return holder.textContent || "";
     }
 
     function readFileAsDataUrl(file) {
@@ -3750,14 +4834,28 @@
       placeholder,
       src,
       position = "50% 50%",
-      zoom = 100
+      zoom = 100,
+      blur = 0
     ) {
+      const blurValue = Math.max(
+        0,
+        Number(blur) || 0
+      );
+
+      const blurOverscan =
+        1 + blurValue / 120;
+
       if (src) {
         img.src = src;
         img.style.display = "block";
         img.style.objectPosition = position;
         img.style.transformOrigin = position;
-        img.style.transform = `scale(${Number(zoom) / 100})`;
+        img.style.transform =
+          `scale(${(Number(zoom) / 100) * blurOverscan})`;
+        img.style.filter =
+          blurValue > 0
+            ? `blur(${blurValue}px)`
+            : "none";
 
         if (placeholder) {
           placeholder.style.display = "none";
@@ -3766,6 +4864,7 @@
         img.removeAttribute("src");
         img.style.display = "none";
         img.style.transform = "scale(1)";
+        img.style.filter = "none";
 
         if (placeholder) {
           placeholder.style.display = "grid";
@@ -3958,14 +5057,23 @@
                         type="button"
                         data-story-delete="${story.id}"
                         title="삭제"
-                        ${state.stories.length <= 4 ? "disabled" : ""}
-                      >×</button>
+                        ${state.stories.length <= 3 ? "disabled" : ""}
+                      >
+                        ×
+                      </button>
                     </div>
                   </div>
 
                   <div class="field">
                     <label>시간대</label>
-                    <input type="text" maxlength="36" value="${escapeHtml(story.time)}" data-story-field="${story.id}:time" />
+                    <input
+                      type="text"
+                      value="${escapeHtml(story.time)}"
+                      data-story-field="${story.id}:time"
+                    />
+                    <span class="mini-label">
+                      글자 수 제한 없이 입력할 수 있습니다.
+                    </span>
                   </div>
 
                   <div class="field">
@@ -3975,7 +5083,42 @@
 
                   <div class="field">
                     <label>서사 내용</label>
-                    <textarea maxlength="1100" style="min-height:170px;" data-story-field="${story.id}:description">${escapeHtml(story.description)}</textarea>
+
+                    <div class="story-format-toolbar">
+                      <button
+                        type="button"
+                        class="story-format-btn story-format-bold"
+                        data-story-format="bold"
+                        data-story-format-id="${story.id}"
+                        title="선택한 글자를 굵게"
+                        aria-label="굵게"
+                      >
+                        B
+                      </button>
+
+                      <button
+                        type="button"
+                        class="story-format-btn story-format-italic"
+                        data-story-format="italic"
+                        data-story-format-id="${story.id}"
+                        title="선택한 글자를 기울임"
+                        aria-label="기울임"
+                      >
+                        I
+                      </button>
+
+                      <span class="mini-label">
+                        글자를 선택한 뒤 B 또는 I를 누릅니다.
+                      </span>
+                    </div>
+
+                    <div
+                      class="story-rich-editor"
+                      contenteditable="true"
+                      role="textbox"
+                      aria-multiline="true"
+                      data-story-rich="${story.id}"
+                    >${getStoryHtml(story)}</div>
                   </div>
                 </div>
               `
@@ -3984,25 +5127,29 @@
         : `<div class="mini-label">서사 블럭이 없습니다. 아래 버튼으로 추가해 주세요.</div>`;
 
       const addStoryButton = $("#addStoryBtn");
-      const reachedMaximum = state.stories.length >= 14;
+      const reachedStoryMaximum =
+        state.stories.length >= 6;
 
-      addStoryButton.disabled = reachedMaximum;
-      addStoryButton.textContent = reachedMaximum
-        ? "서사 블럭 최대 14개"
-        : `＋ 서사 블럭 1개 추가 (${state.stories.length}/14)`;
+      addStoryButton.disabled =
+        reachedStoryMaximum;
+
+      addStoryButton.textContent =
+        reachedStoryMaximum
+          ? "서사 블럭 최대 6개"
+          : `＋ 서사 블럭 1개 추가 (${state.stories.length}/6)`;
     }
 
     function renderSongEditor() {
+      state.songs = state.songs.slice(0, 3);
+
       els.songEditorList.innerHTML = state.songs.length
         ? state.songs
             .map(
               (song, index) => `
                 <div class="editor-card" data-song-editor="${song.id}">
                   <div class="editor-card-head">
-                    <div class="editor-card-title">테마곡 ${index + 1}</div>
-
-                    <div class="small-actions">
-                      <button class="mini-btn danger" type="button" data-song-delete="${song.id}" title="삭제">×</button>
+                    <div class="editor-card-title">
+                      테마곡 ${index + 1}
                     </div>
                   </div>
 
@@ -4018,14 +5165,65 @@
 
                   <div class="field">
                     <label>앨범 커버</label>
-                    <input type="file" accept="image/*" data-song-cover="${song.id}" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      data-song-cover="${song.id}"
+                    />
                   </div>
 
-                  <div class="field">
-                    <label>음원 파일 — 선택</label>
-                    <input type="file" accept="audio/*" data-song-audio="${song.id}" />
-                    <span class="mini-label">${escapeHtml(song.audioName || "음원을 넣지 않아도 카드에는 표시됩니다.")}</span>
-                  </div>
+                  ${index === 0
+                    ? `
+                      <div class="two-col">
+                        <div class="field">
+                          <label>
+                            NOW PLAYING 커버 가로 위치
+                            <span
+                              data-song-cover-position-value="${song.id}:coverX"
+                              style="float:right;"
+                            >
+                              ${Number(song.coverX ?? 50)}%
+                            </span>
+                          </label>
+
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="${Number(song.coverX ?? 50)}"
+                            data-song-field="${song.id}:coverX"
+                          />
+                        </div>
+
+                        <div class="field">
+                          <label>
+                            NOW PLAYING 커버 세로 위치
+                            <span
+                              data-song-cover-position-value="${song.id}:coverY"
+                              style="float:right;"
+                            >
+                              ${Number(song.coverY ?? 50)}%
+                            </span>
+                          </label>
+
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="${Number(song.coverY ?? 50)}"
+                            data-song-field="${song.id}:coverY"
+                          />
+                        </div>
+                      </div>
+
+                      <span class="mini-label">
+                        NOW PLAYING은 항상 테마곡 1입니다.
+                      </span>
+                    `
+                    : ""}
+
                 </div>
               `
             )
@@ -4086,30 +5284,369 @@
           .join("");
     }
 
-    function renderStories() {
-      const stories = state.stories.slice(0, 14);
-      const count = stories.length;
-      const rows = Math.max(
-        2,
-        Math.ceil(count / 2)
+
+    function renderSymbolWordEditor() {
+      const words = Array.isArray(state.symbolWords)
+        ? state.symbolWords
+        : [];
+
+      els.symbolWordEditorList.innerHTML = words
+        .map(
+          (word, index) => `
+            <div
+              class="editor-card"
+              data-symbol-word-editor="${index}"
+            >
+              <div class="editor-card-head">
+                <div class="editor-card-title">
+                  단어 ${index + 1}
+                </div>
+
+                <div class="small-actions">
+                  <button
+                    class="mini-btn"
+                    type="button"
+                    data-symbol-word-up="${index}"
+                    title="위로"
+                    ${index === 0 ? "disabled" : ""}
+                  >
+                    ↑
+                  </button>
+
+                  <button
+                    class="mini-btn"
+                    type="button"
+                    data-symbol-word-down="${index}"
+                    title="아래로"
+                    ${index === words.length - 1 ? "disabled" : ""}
+                  >
+                    ↓
+                  </button>
+
+                  <button
+                    class="mini-btn danger"
+                    type="button"
+                    data-symbol-word-delete="${index}"
+                    title="삭제"
+                    ${words.length <= 1 ? "disabled" : ""}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <div class="two-col">
+                <div class="field">
+                  <label>단어</label>
+                  <input
+                    type="text"
+                    maxlength="20"
+                    value="${escapeHtml(word.title || "")}"
+                    data-symbol-word="${index}:title"
+                  />
+                </div>
+
+                <div class="field">
+                  <label>한자 / 영문</label>
+                  <input
+                    type="text"
+                    maxlength="20"
+                    value="${escapeHtml(word.sub || "")}"
+                    data-symbol-word="${index}:sub"
+                  />
+                </div>
+              </div>
+
+              <div class="field">
+                <label>간단한 뜻</label>
+                <textarea
+                  maxlength="120"
+                  style="min-height:72px;"
+                  data-symbol-word="${index}:description"
+                >${escapeHtml(word.description || "")}</textarea>
+              </div>
+            </div>
+          `
+        )
+        .join("");
+
+      const addWordButton = $("#addSymbolWordBtn");
+      const reachedWordMaximum =
+        words.length >= 4;
+
+      addWordButton.disabled =
+        reachedWordMaximum;
+
+      addWordButton.textContent =
+        reachedWordMaximum
+          ? "단어 블럭 최대 4개"
+          : `＋ 단어 블럭 1개 추가 (${words.length}/4)`;
+    }
+
+    function renderStorySideDecor() {
+      const words = Array.isArray(
+        state.symbolWords
+      )
+        ? state.symbolWords.slice(0, 4)
+        : [];
+
+      const wordCount = Math.max(
+        1,
+        words.length
       );
 
-      const densityClass =
-        rows >= 6
-          ? "density-ultra"
-          : rows >= 4
-            ? "density-compact"
-            : "density-roomy";
+      els.symbolWordList.style.setProperty(
+        "--symbol-word-count",
+        String(wordCount)
+      );
+
+      els.symbolWordList.dataset.count =
+        String(wordCount);
+
+      els.symbolWordList.innerHTML = words
+        .map(
+          (word) => `
+            <article class="symbol-word-card">
+              <div class="symbol-word-title-line">
+                <span class="symbol-word-title">${escapeHtml(word.title || "상징")}</span>
+                <span class="symbol-word-sub">${escapeHtml(word.sub || "")}</span>
+              </div>
+              <p class="symbol-word-description">${escapeHtml(word.description || "둘을 상징하는 단어의 뜻을 적어 주세요.")}</p>
+            </article>
+          `
+        )
+        .join("");
+
+      setImage(
+        els.sideIllustrationImage,
+        els.sideIllustrationPlaceholder,
+        state.sideIllustrationImage,
+        `${state.sideIllustrationX}% ${state.sideIllustrationY}%`,
+        state.sideIllustrationZoom,
+        state.sideIllustrationBlur
+      );
+
+      const sideIllustrationTitle =
+        state.sideIllustrationTitle || "";
+
+      const sideIllustrationSubtitle =
+        state.sideIllustrationSubtitle || "";
+
+      els.sideIllustrationTitleView.textContent =
+        sideIllustrationTitle;
+
+      els.sideIllustrationSubtitleView.textContent =
+        sideIllustrationSubtitle;
+
+      els.sideIllustrationTitleView.style.display =
+        sideIllustrationTitle
+          ? "block"
+          : "none";
+
+      els.sideIllustrationSubtitleView.style.display =
+        sideIllustrationSubtitle
+          ? "block"
+          : "none";
+
+      els.sideIllustrationCaption.style.display =
+        sideIllustrationTitle ||
+        sideIllustrationSubtitle
+          ? "block"
+          : "none";
+
+      els.sideIllustrationPlaceholder.textContent =
+        sideIllustrationTitle ||
+        "PAIR ILLUSTRATION";
+
+      els.sideIllustrationFileName.textContent =
+        state.sideIllustrationImage
+          ? "페어 일러스트가 적용되었습니다."
+          : "선택된 이미지가 없습니다.";
+
+      els.sideIllustrationCreditView.textContent = "";
+      els.sideIllustrationCreditView.style.display =
+        "none";
+    }
+
+    let storyLayoutMetrics = null;
+    let storyLayoutFrame = 0;
+
+    function scheduleStorySizeLayout() {
+      cancelAnimationFrame(storyLayoutFrame);
+
+      storyLayoutFrame = requestAnimationFrame(() => {
+        const count = state.stories.length;
+        const firstRow =
+          els.storyGrid.querySelector(".story-row");
+
+        const relationWidget =
+          document.querySelector(
+            ".side-stack-left .relation-widget"
+          );
+
+        const symbolWidget =
+          document.querySelector(
+            ".side-stack-left .symbol-widget"
+          );
+
+        const musicWidget =
+          document.querySelector(
+            ".side-stack-right .music-widget"
+          );
+
+        const tagWidget =
+          document.querySelector(
+            ".side-stack-right .tag-widget"
+          );
+
+        if (
+          count <= 4 &&
+          firstRow &&
+          relationWidget &&
+          symbolWidget &&
+          musicWidget &&
+          tagWidget
+        ) {
+          els.lowerGrid.classList.remove(
+            "story-expanded"
+          );
+
+          els.lowerGrid.style.height = "";
+          els.storyGrid.style.gridTemplateRows = "";
+
+          const gridStyle =
+            getComputedStyle(els.storyGrid);
+
+          storyLayoutMetrics = {
+            lowerHeight:
+              els.lowerGrid.getBoundingClientRect().height,
+            rowHeight:
+              firstRow.getBoundingClientRect().height,
+            gap:
+              parseFloat(gridStyle.rowGap) || 6,
+            relationHeight:
+              relationWidget.getBoundingClientRect().height,
+            symbolHeight:
+              symbolWidget.getBoundingClientRect().height,
+            musicHeight:
+              musicWidget.getBoundingClientRect().height,
+            tagHeight:
+              tagWidget.getBoundingClientRect().height
+          };
+
+          return;
+        }
+
+        if (count <= 4) {
+          els.lowerGrid.classList.remove(
+            "story-expanded"
+          );
+
+          els.lowerGrid.style.height = "";
+          els.storyGrid.style.gridTemplateRows = "";
+          return;
+        }
+
+        const metrics =
+          storyLayoutMetrics || {
+            lowerHeight: 510,
+            rowHeight: 104,
+            gap: 6,
+            relationHeight: 337,
+            symbolHeight: 146,
+            musicHeight: 397,
+            tagHeight: 86
+          };
+
+        const extraCount =
+          Math.max(0, Math.min(count, 6) - 4);
+
+        const addedHeight =
+          extraCount *
+          (
+            metrics.rowHeight +
+            metrics.gap
+          );
+
+        const expandedHeight =
+          metrics.lowerHeight +
+          addedHeight;
+
+        const fillerHeight = Math.max(
+          48,
+          addedHeight - 9
+        );
+
+        els.lowerGrid.classList.add(
+          "story-expanded"
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--expanded-lower-height",
+          `${expandedHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--base-story-row-height",
+          `${metrics.rowHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--story-filler-height",
+          `${fillerHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--base-relation-height",
+          `${metrics.relationHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--base-symbol-height",
+          `${metrics.symbolHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--base-music-height",
+          `${metrics.musicHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--base-tag-height",
+          `${metrics.tagHeight}px`
+        );
+
+        els.lowerGrid.style.setProperty(
+          "--story-count",
+          String(count)
+        );
+      });
+    }
+
+    function renderStories() {
+      const count = state.stories.length;
+      const renderedCount = Math.max(count, 1);
 
       els.storyCount.textContent = `${count} SCENES`;
-      els.storyGrid.style.setProperty(
-        "--story-rows",
-        rows
-      );
-      els.storyGrid.className =
-        `story-grid ${densityClass}`;
+      els.storyGrid.style.setProperty("--story-count", renderedCount);
 
-      els.storyGrid.innerHTML = stories
+      const densityClass =
+        count >= 7
+          ? "density-dense"
+          : "density-normal";
+
+      els.storyGrid.className = `story-grid ${densityClass}`;
+
+      if (!count) {
+        els.storyGrid.innerHTML = `
+          <div class="story-empty">
+            아직 서사 블럭이 없습니다. 왼쪽 편집창에서 블럭을 추가해 주세요.
+          </div>
+        `;
+        return;
+      }
+
+      els.storyGrid.innerHTML = state.stories
         .map(
           (story, index) => `
             <div class="story-row">
@@ -4121,13 +5658,15 @@
                 <div class="story-content">
                   <div class="story-time">${escapeHtml(story.time || "TIME UNKNOWN")}</div>
                   <h3>${escapeHtml(story.title || "제목 없는 서사")}</h3>
-                  <p>${escapeHtml(story.description || "이 시기의 이야기를 적어 주세요.")}</p>
+                  <p class="story-description">${getStoryHtml(story) || "이 시기의 이야기를 적어 주세요."}</p>
                 </div>
               </article>
             </div>
           `
         )
         .join("");
+
+      scheduleStorySizeLayout();
     }
 
     function renderMusic() {
@@ -4140,30 +5679,51 @@
         return;
       }
 
-      let active = state.songs.find((song) => song.id === state.activeSongId);
-
-      if (!active) {
-        active = state.songs[0];
-        state.activeSongId = active.id;
-      }
+      const active = state.songs[0];
 
       els.nowTitle.textContent = active.title || "Untitled Song";
       els.nowArtist.textContent = active.artist || "Unknown Artist";
 
+      const activeCoverX = Math.max(
+        0,
+        Math.min(
+          100,
+          Number(active.coverX ?? 50)
+        )
+      );
+
+      const activeCoverY = Math.max(
+        0,
+        Math.min(
+          100,
+          Number(active.coverY ?? 50)
+        )
+      );
+
       if (active.cover) {
         els.nowCover.src = active.cover;
         els.nowCover.style.display = "block";
+        els.nowCover.style.objectPosition =
+          `${activeCoverX}% ${activeCoverY}%`;
       } else {
         els.nowCover.removeAttribute("src");
         els.nowCover.style.display = "none";
+        els.nowCover.style.objectPosition =
+          "50% 50%";
       }
 
       els.playlist.innerHTML = state.songs
         .map(
-          (song) => `
-            <div class="song-row ${song.id === state.activeSongId ? "active" : ""}">
+          (song, index) => `
+            <div class="song-row ${index === 0 ? "active" : ""}">
               <div class="song-thumb">
-                ${song.cover ? `<img src="${song.cover}" alt="" />` : ""}
+                ${song.cover
+                  ? `<img
+                      src="${song.cover}"
+                      alt=""
+                      style="object-position:${Number(song.coverX ?? 50)}% ${Number(song.coverY ?? 50)}%;"
+                    />`
+                  : ""}
               </div>
 
               <div class="song-info">
@@ -4171,14 +5731,12 @@
                 <div class="song-artist">${escapeHtml(song.artist || "Unknown Artist")}</div>
               </div>
 
-              <button
-                class="song-play"
-                type="button"
-                data-play-song="${song.id}"
-                aria-label="곡 재생"
+              <span
+                class="song-play song-play-static"
+                aria-hidden="true"
               >
                 ▶
-              </button>
+              </span>
             </div>
           `
         )
@@ -4189,8 +5747,11 @@
       const values = [
         state.charA?.credit,
         state.heroCredit,
+        state.wallpaperCredit,
+        state.lowerBackgroundCredit,
         state.charB?.credit,
-        state.symbolCredit
+        state.symbolCredit,
+        state.sideIllustrationCredit
       ]
         .map((value) => String(value || "").trim())
         .filter(Boolean);
@@ -4372,7 +5933,9 @@
         els.symbolImage,
         els.symbolPlaceholder,
         state.symbolImage,
-        `${state.symbolX}% ${state.symbolY}%`
+        `${state.symbolX}% ${state.symbolY}%`,
+        100,
+        state.symbolBlur
       );
 
       els.symbolCreditView.textContent = "";
@@ -4398,6 +5961,7 @@
 
       renderCharacter("A");
       renderCharacter("B");
+      renderStorySideDecor();
       renderStories();
       renderMusic();
     }
@@ -4428,10 +5992,33 @@
         `${state.lowerBackgroundZoom}%`;
       $("#symbolX").value = state.symbolX;
       $("#symbolY").value = state.symbolY;
+      $("#symbolBlur").value = state.symbolBlur;
+      $("#symbolBlurValue").textContent =
+        `${state.symbolBlur}px`;
       $("#storyFontSize").value = state.storyFontSize;
       $("#storyFontSizeValue").textContent = `${state.storyFontSize}px`;
+
+      $("#sideIllustrationX").value =
+        state.sideIllustrationX;
+
+      $("#sideIllustrationY").value =
+        state.sideIllustrationY;
+
+      $("#sideIllustrationZoom").value =
+        state.sideIllustrationZoom;
+
+      $("#sideIllustrationZoomValue").textContent =
+        `${state.sideIllustrationZoom}%`;
+
+      $("#sideIllustrationBlur").value =
+        state.sideIllustrationBlur;
+
+      $("#sideIllustrationBlurValue").textContent =
+        `${state.sideIllustrationBlur}px`;
+
       syncThemeInputs();
 
+      renderSymbolWordEditor();
       renderPairTagEditor();
       renderCharacterEditors();
       renderStoryEditor();
@@ -4513,6 +6100,11 @@
 
         if (!key || !file || !state[key]) return;
 
+        rememberOriginalImage(
+          `${key}.image`,
+          file
+        );
+
         state[key].image = await readImage(file, {
           maxSide: 1300,
           quality: 0.88
@@ -4576,29 +6168,6 @@
 
         event.preventDefault();
         addCharacterTag(key, event.target);
-      });
-    }
-
-    function playSong(id) {
-      const song = state.songs.find((item) => item.id === id);
-      if (!song) return;
-
-      state.activeSongId = id;
-      renderMusic();
-
-      if (!song.audioUrl) {
-        showToast("음원 파일을 업로드하면 여기서 재생할 수 있어.");
-        return;
-      }
-
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
-
-      currentAudio = new Audio(song.audioUrl);
-      currentAudio.play().catch(() => {
-        showToast("브라우저에서 재생이 차단되었습니다. 재생 버튼을 다시 눌러 주세요.");
       });
     }
 
@@ -4771,7 +6340,7 @@
     }
 
     function exportFont(weight, size) {
-      return `${weight} ${size}px Pretendard, Arial, sans-serif`;
+      return `${weight} ${size}px "Noto Sans KR", Pretendard, "Malgun Gothic", Arial, sans-serif`;
     }
 
     function wrapCanvasText(
@@ -4924,7 +6493,8 @@
         positionY = 50,
         zoom = 100,
         opacity = 1,
-        radius = 0
+        radius = 0,
+        blur = 0
       } = {}
     ) {
       if (!image || !image.naturalWidth || !image.naturalHeight) {
@@ -4940,12 +6510,27 @@
 
       ctx.globalAlpha = opacity;
 
+      const blurValue = Math.max(
+        0,
+        Number(blur) || 0
+      );
+
+      if (blurValue > 0) {
+        ctx.filter = `blur(${blurValue}px)`;
+      }
+
+      const blurOverscan =
+        1 + blurValue / 120;
+
       const baseScale = Math.max(
         width / image.naturalWidth,
         height / image.naturalHeight
       );
 
-      const scale = baseScale * (Number(zoom) / 100);
+      const scale =
+        baseScale *
+        (Number(zoom) / 100) *
+        blurOverscan;
       const drawWidth = image.naturalWidth * scale;
       const drawHeight = image.naturalHeight * scale;
 
@@ -5173,7 +6758,7 @@
         {
           size: 7.15,
           weight: 600,
-          color: muted,
+          color: colors.ink,
           lineHeight: 1.34,
           maxLines: 3
         }
@@ -5556,6 +7141,80 @@
       }
     }
 
+
+    function measureMemoCanvasLayout(
+      ctx,
+      width
+    ) {
+      const {
+        charAName,
+        charBName
+      } = getCharacterNames();
+
+      const items = [
+        ["첫인상", state.firstImpression],
+        ["현재 관계", state.currentRelation],
+        [`${charAName} → ${charBName}`, state.jaheonCalls],
+        [`${charBName} → ${charAName}`, state.heesolCalls],
+        [`${charAName}의 말투`, state.charASpeechStyle],
+        [`${charBName}의 말투`, state.charBSpeechStyle]
+      ];
+
+      const contentWidth =
+        width - 44;
+
+      const rowHeights = items.map(
+        ([, value]) => {
+          ctx.save();
+          ctx.font = exportFont(600, 7.2);
+
+          const lines = wrapCanvasText(
+            ctx,
+            value || "",
+            contentWidth,
+            4
+          );
+
+          ctx.restore();
+
+          const bodyHeight =
+            Math.max(
+              7.2 * 1.35,
+              lines.length * 7.2 * 1.35
+            );
+
+          return (
+            8 +
+            6.8 +
+            5 +
+            bodyHeight +
+            8
+          );
+        }
+      );
+
+      const gap = 6;
+
+      const height =
+        42 +
+        rowHeights.reduce(
+          (sum, value) => sum + value,
+          0
+        ) +
+        gap * Math.max(
+          0,
+          items.length - 1
+        ) +
+        10;
+
+      return {
+        items,
+        rowHeights,
+        gap,
+        height
+      };
+    }
+
     function drawMemoCanvas(
       ctx,
       x,
@@ -5608,31 +7267,24 @@
         }
       );
 
+      const layout =
+        measureMemoCanvasLayout(
+          ctx,
+          width
+        );
+
       const {
-        charAName,
-        charBName
-      } = getCharacterNames();
+        items,
+        rowHeights,
+        gap
+      } = layout;
 
-      const items = [
-        ["첫인상", state.firstImpression],
-        ["현재 관계", state.currentRelation],
-        [`${charAName} → ${charBName}`, state.jaheonCalls],
-        [`${charBName} → ${charAName}`, state.heesolCalls],
-        [`${charAName}의 말투`, state.charASpeechStyle],
-        [`${charBName}의 말투`, state.charBSpeechStyle]
-      ];
-
-      const gap = 6;
       const startY = y + 42;
-      const rowHeight =
-        (
-          height -
-          55 -
-          gap * Math.max(0, items.length - 1)
-        ) / items.length;
+      let rowY = startY;
 
       items.forEach(([label, value], index) => {
-        const rowY = startY + index * (rowHeight + gap);
+        const rowHeight =
+          rowHeights[index];
 
         fillRounded(
           ctx,
@@ -5670,9 +7322,11 @@
             weight: 600,
             color: colors.ink,
             lineHeight: 1.35,
-            maxLines: 2
+            maxLines: 4
           }
         );
+
+        rowY += rowHeight + gap;
       });
     }
 
@@ -5727,7 +7381,8 @@
           {
             positionX: state.symbolX,
             positionY: state.symbolY,
-            radius: 20
+            radius: 20,
+            blur: state.symbolBlur
           }
         )
       ) {
@@ -5798,11 +7453,7 @@
           accentAlpha: 0.14
         }
       );
-
-      const border = canvasRgba(
-        colors.surface,
-        0.52
-      );
+      const border = canvasRgba(colors.surface, 0.52);
 
       drawGlassRounded(
         ctx,
@@ -5835,18 +7486,9 @@
         }
       );
 
-      const stories = (state.stories || [])
-        .slice(0, 14);
-
-      const count = stories.length;
-      const rows = Math.max(
-        2,
-        Math.ceil(count / 2)
-      );
-
       drawCanvasText(
         ctx,
-        `${count} SCENES`,
+        `${state.stories.length} SCENES`,
         x + width - 14,
         y + 15,
         80,
@@ -5860,98 +7502,29 @@
         }
       );
 
-      const contentTop = y + 42;
-      const contentBottom = y + height - 12;
-      const columnGap = 12;
-      const rowGap =
-        rows >= 6
-          ? 5
-          : rows >= 4
-            ? 7
-            : 9;
-
-      const columnWidth =
-        (width - 24 - columnGap) / 2;
-
+      const stories = state.stories || [];
+      const count = Math.max(1, stories.length);
+      const top = y + 42;
+      const bottom = y + height - 12;
+      const gap = 7;
+      const axisX = x + 36;
+      const cardX = x + 62;
+      const cardWidth = width - 74;
       const rowHeight =
-        (
-          contentBottom -
-          contentTop -
-          rowGap * Math.max(0, rows - 1)
-        ) / rows;
+        (bottom - top - gap * Math.max(0, count - 1)) /
+        count;
 
-      const axisWidth =
-        rows >= 6
-          ? 36
-          : rows >= 4
-            ? 42
-            : 46;
-
-      const indexSize =
-        rows >= 6
-          ? 27
-          : rows >= 4
-            ? 30
-            : 33;
-
-      const userFont = Math.max(
-        6,
-        Math.min(
-          Number(state.storyFontSize || 8),
-          12
-        )
-      );
-
-      const baseFont =
-        rows >= 6
-          ? Math.min(userFont * 0.73, 6.7)
-          : rows >= 4
-            ? Math.min(userFont * 0.88, 8)
-            : Math.min(userFont, 10);
+      ctx.save();
+      ctx.strokeStyle = colors.deep;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(axisX, top + 17);
+      ctx.lineTo(axisX, bottom - 12);
+      ctx.stroke();
+      ctx.restore();
 
       stories.forEach((story, index) => {
-        const column =
-          index < rows ? 0 : 1;
-
-        const row =
-          column === 0
-            ? index
-            : index - rows;
-
-        const columnX =
-          x +
-          12 +
-          column *
-            (columnWidth + columnGap);
-
-        const rowY =
-          contentTop +
-          row *
-            (rowHeight + rowGap);
-
-        const axisX =
-          columnX + axisWidth / 2;
-
-        const cardX =
-          columnX + axisWidth + 5;
-
-        const cardWidth =
-          columnWidth -
-          axisWidth -
-          5;
-
-        ctx.save();
-        ctx.strokeStyle =
-          canvasRgba(colors.deep, 0.57);
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(axisX, rowY);
-        ctx.lineTo(
-          axisX,
-          rowY + rowHeight
-        );
-        ctx.stroke();
-        ctx.restore();
+        const rowY = top + index * (rowHeight + gap);
 
         fillRounded(
           ctx,
@@ -5959,47 +7532,39 @@
           rowY,
           cardWidth,
           rowHeight,
-          rows >= 6 ? 9 : 12,
+          12,
           card,
           border
         );
 
         fillRounded(
           ctx,
-          axisX - indexSize / 2,
-          rowY + Math.max(2, (rowHeight - indexSize) * 0.10),
-          indexSize,
-          indexSize,
-          rows >= 6 ? 8 : 10,
+          axisX - 16,
+          rowY + 6,
+          32,
+          32,
+          10,
           colors.deep
         );
 
         ctx.save();
-        ctx.font = exportFont(
-          900,
-          rows >= 6 ? 6.5 : 7.5
-        );
+        ctx.font = exportFont(900, 8);
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(
           String(index + 1).padStart(2, "0"),
           axisX,
-          rowY +
-            Math.max(2, (rowHeight - indexSize) * 0.10) +
-            indexSize / 2
+          rowY + 22
         );
         ctx.restore();
-
-        const dotRadius =
-          rows >= 6 ? 3.5 : 5;
 
         ctx.save();
         ctx.beginPath();
         ctx.arc(
           axisX,
-          rowY + rowHeight - dotRadius - 2,
-          dotRadius,
+          rowY + rowHeight - 8,
+          5,
           0,
           Math.PI * 2
         );
@@ -6010,78 +7575,64 @@
         ctx.stroke();
         ctx.restore();
 
-        const padX =
-          rows >= 6 ? 9 : 13;
+        const contentX = cardX + 13;
+        const contentWidth = cardWidth - 26;
+        const baseFont = Math.max(
+          6,
+          Math.min(
+            Number(state.storyFontSize || 8),
+            rowHeight < 70 ? 7 : 10
+          )
+        );
 
-        const contentX =
-          cardX + padX;
-
-        const contentWidth =
-          cardWidth - padX * 2;
-
-        const topPad =
-          rows >= 6 ? 5 : 9;
-
-        const timeSize =
-          rows >= 6
-            ? baseFont * 0.72
-            : baseFont * 0.82;
-
-        const titleSize =
-          rows >= 6
-            ? baseFont * 1.04
-            : baseFont * 1.24;
-
-        const titleY =
-          rowY +
-          topPad +
-          timeSize +
-          (rows >= 6 ? 2 : 5);
-
-        const bodyY =
-          titleY +
-          titleSize +
-          (rows >= 6 ? 3 : 8);
-
-        drawCanvasText(
+        const timeMetrics = drawCanvasText(
           ctx,
           story.time || "TIME UNKNOWN",
           contentX,
-          rowY + topPad,
+          rowY + 8,
           contentWidth,
           {
-            size: timeSize,
+            size: baseFont * 0.8,
             weight: 900,
             color: colors.deep,
-            lineHeight: 1,
-            maxLines: 1
+            lineHeight: 1.12,
+            maxLines: 2
           }
         );
 
-        drawCanvasText(
+        const titleY =
+          rowY +
+          8 +
+          timeMetrics.height +
+          4;
+
+        const titleMetrics = drawCanvasText(
           ctx,
           story.title || "제목 없는 서사",
           contentX,
           titleY,
           contentWidth,
           {
-            size: titleSize,
+            size: baseFont * 1.24,
             weight: 850,
             color: colors.ink,
-            lineHeight: 1.12,
+            lineHeight: 1.15,
             maxLines: 1
           }
         );
 
-        const availableBodyHeight =
-          rowY +
-          rowHeight -
-          bodyY -
-          (rows >= 6 ? 5 : 8);
+        const bodyY =
+          titleY +
+          titleMetrics.height +
+          5;
 
         drawCanvasText(
           ctx,
-          story.description,
+          typeof story.descriptionHtml === "string"
+            ? storyHtmlToPlainText(
+                story.descriptionHtml
+              )
+            : story.description,
           contentX,
           bodyY,
           contentWidth,
@@ -6089,20 +7640,17 @@
             size: baseFont,
             weight: 600,
             color: colors.ink,
-            lineHeight:
-              rows >= 6 ? 1.22 : 1.36,
+            lineHeight: 1.35,
             maxLines: Math.max(
               1,
               Math.floor(
-                availableBodyHeight /
                 (
-                  baseFont *
-                  (
-                    rows >= 6
-                      ? 1.22
-                      : 1.36
-                  )
-                )
+                  rowY +
+                  rowHeight -
+                  bodyY -
+                  7
+                ) /
+                (baseFont * 1.35)
               )
             )
           }
@@ -6160,6 +7708,24 @@
 
       const coverHeight = 176;
 
+      const active = state.songs[0];
+
+      const activeCoverX = Math.max(
+        0,
+        Math.min(
+          100,
+          Number(active?.coverX ?? 50)
+        )
+      );
+
+      const activeCoverY = Math.max(
+        0,
+        Math.min(
+          100,
+          Number(active?.coverY ?? 50)
+        )
+      );
+
       if (
         !drawImageCoverCanvas(
           ctx,
@@ -6169,6 +7735,8 @@
           width,
           coverHeight,
           {
+            positionX: activeCoverX,
+            positionY: activeCoverY,
             radius: 0
           }
         )
@@ -6241,11 +7809,6 @@
       );
 
       ctx.restore();
-
-      const active =
-        state.songs.find(
-          (song) => song.id === state.activeSongId
-        ) || state.songs[0];
 
       drawCanvasText(
         ctx,
@@ -6387,6 +7950,10 @@
             thumbSize,
             thumbSize,
             {
+              positionX:
+                Number(song.coverX ?? 50),
+              positionY:
+                Number(song.coverY ?? 50),
               radius: 9
             }
           )
@@ -6565,9 +8132,282 @@
       });
     }
 
+
+    function drawSymbolWordsCanvas(
+      ctx,
+      x,
+      y,
+      width,
+      height,
+      colors
+    ) {
+      drawGlassRounded(
+        ctx,
+        x,
+        y,
+        width,
+        height,
+        18,
+        colors,
+        {
+          surfaceAlpha: 0.48,
+          accentAlpha: 0.15,
+          borderAlpha: 0.46,
+          highlightAlpha: 0.25
+        }
+      );
+
+      drawCanvasText(
+        ctx,
+        "PAIR DICTIONARY",
+        x + 12,
+        y + 9,
+        width - 24,
+        {
+          size: 7,
+          weight: 900,
+          color: colors.deep,
+          lineHeight: 1,
+          maxLines: 1
+        }
+      );
+
+      const words =
+        (state.symbolWords || []).slice(0, 4);
+
+      const count = Math.max(
+        1,
+        words.length
+      );
+
+      const gap = 6;
+      const top = y + 25;
+
+      const cardWidth =
+        width - 24;
+
+      const cardHeight =
+        (
+          height -
+          34 -
+          gap * Math.max(0, count - 1)
+        ) / count;
+
+      words.forEach((word, index) => {
+        const cardX = x + 12;
+
+        const cardY =
+          top + index * (cardHeight + gap);
+
+        fillRounded(
+          ctx,
+          cardX,
+          cardY,
+          cardWidth,
+          cardHeight,
+          10,
+          canvasRgba(colors.surface, 0.34),
+          canvasRgba(colors.surface, 0.4)
+        );
+
+        const titleSize =
+          count === 1
+            ? 8.8
+            : count === 2
+              ? 7.8
+              : 6.8;
+
+        const bodySize =
+          count === 1
+            ? 6.8
+            : count === 2
+              ? 6.1
+              : 5.4;
+
+        drawCanvasText(
+          ctx,
+          `${word.title || "상징"}  ${word.sub || ""}`,
+          cardX + 8,
+          cardY + 7,
+          cardWidth - 16,
+          {
+            size: titleSize,
+            weight: 900,
+            color: colors.ink,
+            lineHeight: 1,
+            maxLines: 1
+          }
+        );
+
+        drawCanvasText(
+          ctx,
+          word.description || "",
+          cardX + 8,
+          cardY + 20,
+          cardWidth - 16,
+          {
+            size: bodySize,
+            weight: 600,
+            color: colors.ink,
+            lineHeight: 1.28,
+            maxLines:
+              count === 1
+                ? 5
+                : count === 2
+                  ? 3
+                  : 2
+          }
+        );
+      });
+    }
+
+    function drawSideIllustrationCanvas(
+      ctx,
+      image,
+      x,
+      y,
+      width,
+      height,
+      colors
+    ) {
+      drawGlassRounded(
+        ctx,
+        x,
+        y,
+        width,
+        height,
+        18,
+        colors,
+        {
+          surfaceAlpha: 0.48,
+          accentAlpha: 0.15,
+          borderAlpha: 0.46,
+          highlightAlpha: 0.25
+        }
+      );
+
+      const innerX = x + 8;
+      const innerY = y + 8;
+      const innerWidth = width - 16;
+      const innerHeight = height - 16;
+
+      fillRounded(
+        ctx,
+        innerX,
+        innerY,
+        innerWidth,
+        innerHeight,
+        12,
+        canvasRgba(colors.surface, 0.2),
+        canvasRgba(colors.surface, 0.4)
+      );
+
+      if (image) {
+        drawImageCoverCanvas(
+          ctx,
+          image,
+          innerX,
+          innerY,
+          innerWidth,
+          innerHeight,
+          {
+            positionX:
+              state.sideIllustrationX,
+            positionY:
+              state.sideIllustrationY,
+            zoom:
+              state.sideIllustrationZoom,
+            blur:
+              state.sideIllustrationBlur,
+            radius: 12
+          }
+        );
+      } else {
+        drawPlaceholderCanvas(
+          ctx,
+          innerX,
+          innerY,
+          innerWidth,
+          innerHeight,
+          state.sideIllustrationTitle ||
+          "PAIR ILLUSTRATION",
+          colors
+        );
+      }
+
+      const illustrationTitle =
+        state.sideIllustrationTitle || "";
+
+      const illustrationSubtitle =
+        state.sideIllustrationSubtitle || "";
+
+      if (illustrationTitle) {
+        drawCanvasText(
+          ctx,
+          illustrationTitle,
+          innerX + 9,
+          innerY + innerHeight - 25,
+          innerWidth - 18,
+          {
+            size: 6,
+            weight: 900,
+            color: "rgba(255,255,255,.9)",
+            lineHeight: 1,
+            maxLines: 1,
+            shadowColor: "rgba(0,0,0,.48)",
+            shadowBlur: 3,
+            shadowOffsetY: 1
+          }
+        );
+      }
+
+      if (illustrationSubtitle) {
+        drawCanvasText(
+          ctx,
+          illustrationSubtitle,
+          innerX + 9,
+          innerY + innerHeight - 14,
+          innerWidth - 18,
+          {
+            size: 4.8,
+            weight: 750,
+            color: "rgba(255,255,255,.76)",
+            lineHeight: 1,
+            maxLines: 1,
+            shadowColor: "rgba(0,0,0,.42)",
+            shadowBlur: 3,
+            shadowOffsetY: 1
+          }
+        );
+      }
+    }
+
     async function renderArchiveCanvas() {
       const logicalWidth = 1440;
-      const logicalHeight = 1120;
+
+      const canvasStoryCount = Math.min(
+        6,
+        Math.max(1, state.stories.length)
+      );
+
+      const canvasExtraStories = Math.max(
+        0,
+        canvasStoryCount - 4
+      );
+
+      const canvasBaseStoryRowHeight = 108.75;
+      const canvasStoryGap = 7;
+
+      const canvasExtraHeight =
+        canvasExtraStories *
+        (
+          canvasBaseStoryRowHeight +
+          canvasStoryGap
+        );
+
+      const logicalHeight =
+        1120 + canvasExtraHeight;
+
       const exportScale = 2;
 
       const canvas = document.createElement("canvas");
@@ -6602,6 +8442,7 @@
         charA,
         charB,
         symbol,
+        sideIllustration,
         activeCover,
         ...songImages
       ] = await Promise.all([
@@ -6612,11 +8453,10 @@
         loadCanvasImage(state.charB.image),
         loadCanvasImage(state.symbolImage),
         loadCanvasImage(
-          (
-            state.songs.find(
-              (song) => song.id === state.activeSongId
-            ) || state.songs[0]
-          )?.cover
+          state.sideIllustrationImage
+        ),
+        loadCanvasImage(
+          state.songs[0]?.cover
         ),
         ...(state.songs || []).map((song) =>
           loadCanvasImage(song.cover)
@@ -6755,9 +8595,17 @@
       );
 
       const lowerY = topY + topH + 10;
-      const lowerH = 510;
-      const lowerWidth =
-        logicalWidth - margin * 2;
+      const baseLowerH = 510;
+      const lowerH =
+        baseLowerH + canvasExtraHeight;
+      const sideW = 310;
+      const centerX = margin + sideW + gap;
+      const centerW =
+        logicalWidth -
+        margin * 2 -
+        sideW * 2 -
+        gap * 2;
+      const rightX = centerX + centerW + gap;
 
       if (lowerBackground) {
         drawImageCoverCanvas(
@@ -6765,18 +8613,13 @@
           lowerBackground,
           margin,
           lowerY,
-          lowerWidth,
+          logicalWidth - margin * 2,
           lowerH,
           {
-            positionX:
-              state.lowerBackgroundX,
-            positionY:
-              state.lowerBackgroundY,
-            zoom:
-              state.lowerBackgroundZoom,
-            opacity:
-              state.lowerBackgroundOpacity /
-              100,
+            positionX: state.lowerBackgroundX,
+            positionY: state.lowerBackgroundY,
+            zoom: state.lowerBackgroundZoom,
+            opacity: state.lowerBackgroundOpacity / 100,
             radius: 22
           }
         );
@@ -6785,38 +8628,156 @@
           ctx,
           margin,
           lowerY,
-          lowerWidth,
+          logicalWidth - margin * 2,
           lowerH,
           22,
-          canvasRgba(
-            colors.surface,
-            0.025
-          )
+          canvasRgba(colors.surface, 0.025)
         );
       }
 
-      drawStoriesCanvas(
+      const memoLayout =
+        measureMemoCanvasLayout(
+          ctx,
+          sideW
+        );
+
+      const memoH = Math.min(
+        memoLayout.height,
+        baseLowerH - gap - 68
+      );
+
+      const symbolY =
+        lowerY + memoH + gap;
+
+      const symbolH =
+        baseLowerH - memoH - gap;
+
+      drawMemoCanvas(
         ctx,
         margin,
         lowerY,
-        lowerWidth,
+        sideW,
+        memoH,
+        colors
+      );
+
+      drawSymbolCanvas(
+        ctx,
+        symbol,
+        margin,
+        symbolY,
+        sideW,
+        symbolH,
+        colors
+      );
+
+      drawStoriesCanvas(
+        ctx,
+        centerX,
+        lowerY,
+        centerW,
         lowerH,
         colors
       );
 
+      const keywordsH = 86;
+      const musicH =
+        baseLowerH - keywordsH - gap;
+
+      drawMusicCanvas(
+        ctx,
+        activeCover,
+        songImages,
+        rightX,
+        lowerY,
+        sideW,
+        musicH,
+        colors
+      );
+
+      drawKeywordsCanvas(
+        ctx,
+        rightX,
+        lowerY + musicH + gap,
+        sideW,
+        keywordsH,
+        colors
+      );
+
+      if (canvasExtraHeight > 0) {
+        const fillerY =
+          lowerY + baseLowerH + gap;
+
+        const fillerHeight =
+          Math.max(
+            48,
+            canvasExtraHeight - gap
+          );
+
+        drawSymbolWordsCanvas(
+          ctx,
+          margin,
+          fillerY,
+          sideW,
+          fillerHeight,
+          colors
+        );
+
+        drawSideIllustrationCanvas(
+          ctx,
+          sideIllustration,
+          rightX,
+          fillerY,
+          sideW,
+          fillerHeight,
+          colors
+        );
+      }
+
+      const unifiedCredits = getUnifiedCredits();
+
+      if (unifiedCredits.length) {
+        const creditText =
+          `ILLUST. ${unifiedCredits.join(" · ")}`;
+
+        drawCanvasText(
+          ctx,
+          creditText,
+          logicalWidth - margin,
+          logicalHeight - 20,
+          470,
+          {
+            size: 6.8,
+            weight: 750,
+            color: "rgba(255,255,255,.62)",
+            lineHeight: 1,
+            maxLines: 1,
+            align: "right",
+            shadowColor: "rgba(0,0,0,.22)",
+            shadowBlur: 1.5,
+            shadowOffsetY: 1
+          }
+        );
+      }
+
+      const creatorText = "MADE BY @BAKHA_cm";
+
       drawCanvasText(
         ctx,
-        "MADE BY @BAKHA_cm",
+        creatorText,
         logicalWidth / 2,
-        logicalHeight - 22,
-        400,
+        logicalHeight - 20,
+        260,
         {
-          size: 6,
+          size: 6.2,
           weight: 700,
-          color: canvasRgba(colors.ink, 0.46),
+          color: "rgba(255,255,255,.60)",
           lineHeight: 1,
           maxLines: 1,
-          align: "center"
+          align: "center",
+          shadowColor: "rgba(0,0,0,.20)",
+          shadowBlur: 1.5,
+          shadowOffsetY: 1
         }
       );
 
@@ -6911,56 +8872,121 @@
       return new Blob([payload]).size;
     }
 
-    async function requestChromiumPng() {
+    async function requestChromiumPng(
+      onProgress
+    ) {
       await waitForImages(els.captureArea);
 
       if (document.fonts?.ready) {
         await document.fonts.ready;
       }
 
-      const renderHtml = buildExactRenderHtml();
+      let uploadedImages = [];
+      let renderHtml = "";
 
-      const payload = JSON.stringify({
-        html: renderHtml,
-        width: 1440,
-        scale: 2
-      });
+      try {
+        uploadedImages =
+          await uploadRenderImages(
+            onProgress
+          );
 
-      const payloadBytes = renderRequestSize(payload);
-      const safeLimit = 4_300_000;
-
-      if (payloadBytes > safeLimit) {
-        throw new Error(
-          "첨부한 이미지들의 용량이 너무 큽니다. " +
-          "이미지를 조금 줄여 다시 업로드해 주세요."
-        );
-      }
-
-      const response = await fetch("/api/render", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: payload
-      });
-
-      if (!response.ok) {
-        let message =
-          "서버에서 PNG를 렌더링하지 못했습니다.";
+        const originalValues =
+          uploadedImages.map(
+            ({ slot }) => ({
+              slot,
+              value: slot.get()
+            })
+          );
 
         try {
-          const result = await response.json();
-          if (result?.error) {
-            message = result.error;
-          }
-        } catch (error) {
-          // JSON 오류 응답이 아니면 기본 문구를 사용합니다.
+          uploadedImages.forEach(
+            ({ slot, url }) => {
+              slot.set(url);
+            }
+          );
+
+          renderPreview();
+          renderHtml =
+            buildExactRenderHtml();
+        } finally {
+          originalValues.forEach(
+            ({ slot, value }) => {
+              slot.set(value);
+            }
+          );
+
+          renderPreview();
         }
 
-        throw new Error(message);
-      }
+        const temporaryBlobUrls =
+          uploadedImages.map(
+            ({ url }) => url
+          );
 
-      return response.blob();
+        const payload = JSON.stringify({
+          html: renderHtml,
+          width: 1440,
+          scale: 2,
+          temporaryBlobUrls
+        });
+
+        const payloadBytes =
+          renderRequestSize(payload);
+
+        const safeLimit = 4_300_000;
+
+        if (payloadBytes > safeLimit) {
+          throw new Error(
+            "이미지를 URL 방식으로 바꾼 뒤에도 렌더링 데이터가 너무 큽니다. 입력한 서사나 문구의 양을 조금 줄여 주세요."
+          );
+        }
+
+        onProgress?.(
+          temporaryBlobUrls.length,
+          temporaryBlobUrls.length,
+          "render"
+        );
+
+        const response = await fetch(
+          "/api/render",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: payload
+          }
+        );
+
+        if (!response.ok) {
+          let message =
+            "서버에서 PNG를 렌더링하지 못했습니다.";
+
+          try {
+            const result =
+              await response.json();
+
+            if (result?.error) {
+              message = result.error;
+            }
+          } catch (error) {
+            // JSON 오류 응답이 아니면 기본 문구를 사용합니다.
+          }
+
+          throw new Error(message);
+        }
+
+        return response.blob();
+      } catch (error) {
+        await cleanupTemporaryBlobs(
+          uploadedImages.map(
+            ({ url }) => url
+          )
+        );
+
+        throw error;
+      }
     }
 
     async function exportImage() {
@@ -6968,10 +8994,29 @@
       const oldText = button.textContent;
 
       button.disabled = true;
-      button.textContent = "Chromium에서 원본 렌더링 중…";
+      button.textContent =
+        "원본 이미지 준비 중…";
 
       try {
-        const blob = await requestChromiumPng();
+        const blob =
+          await requestChromiumPng(
+            (
+              completed,
+              total,
+              stage
+            ) => {
+              if (stage === "render") {
+                button.textContent =
+                  "Chromium에서 원본 렌더링 중…";
+                return;
+              }
+
+              button.textContent =
+                total > 0
+                  ? `원본 이미지 업로드 ${Math.min(completed + 1, total)}/${total}…`
+                  : "Chromium에서 원본 렌더링 중…";
+            }
+          );
 
         if (!blob || blob.type !== "image/png") {
           throw new Error(
@@ -7003,8 +9048,8 @@
         console.error(error);
 
         alert(
-          `${error?.message || "이미지를 저장하지 못했습니다."}\n\n` +
-          "GitHub에 package.json과 api 폴더까지 함께 올렸는지 확인해 주세요."
+          error?.message ||
+          "이미지를 저장하지 못했습니다."
         );
       } finally {
         button.disabled = false;
@@ -7018,6 +9063,212 @@
         renderPreview();
       });
     });
+
+
+    els.symbolWordEditorList.addEventListener(
+      "input",
+      (event) => {
+        const meta =
+          event.target.dataset.symbolWord;
+
+        if (!meta) return;
+
+        const [indexText, field] =
+          meta.split(":");
+
+        const index = Number(indexText);
+        const word = state.symbolWords[index];
+
+        if (!word || !field) return;
+
+        word[field] = event.target.value;
+        renderPreview();
+      }
+    );
+
+
+    els.symbolWordEditorList.addEventListener(
+      "click",
+      (event) => {
+        const upIndex =
+          event.target.dataset.symbolWordUp;
+
+        const downIndex =
+          event.target.dataset.symbolWordDown;
+
+        const deleteIndex =
+          event.target.dataset.symbolWordDelete;
+
+        if (upIndex !== undefined) {
+          const index = Number(upIndex);
+
+          if (index > 0) {
+            [
+              state.symbolWords[index - 1],
+              state.symbolWords[index]
+            ] = [
+              state.symbolWords[index],
+              state.symbolWords[index - 1]
+            ];
+
+            renderSymbolWordEditor();
+            renderPreview();
+          }
+
+          return;
+        }
+
+        if (downIndex !== undefined) {
+          const index = Number(downIndex);
+
+          if (
+            index >= 0 &&
+            index < state.symbolWords.length - 1
+          ) {
+            [
+              state.symbolWords[index],
+              state.symbolWords[index + 1]
+            ] = [
+              state.symbolWords[index + 1],
+              state.symbolWords[index]
+            ];
+
+            renderSymbolWordEditor();
+            renderPreview();
+          }
+
+          return;
+        }
+
+        if (deleteIndex !== undefined) {
+          if (state.symbolWords.length <= 1) {
+            return;
+          }
+
+          state.symbolWords.splice(
+            Number(deleteIndex),
+            1
+          );
+
+          renderSymbolWordEditor();
+          renderPreview();
+        }
+      }
+    );
+
+    $("#addSymbolWordBtn").addEventListener(
+      "click",
+      () => {
+        if (state.symbolWords.length >= 4) {
+          return;
+        }
+
+        state.symbolWords.push({
+          title: "새 단어",
+          sub: "WORD",
+          description:
+            "둘을 상징하는 단어의 뜻을 적어 주세요."
+        });
+
+        renderSymbolWordEditor();
+        renderPreview();
+      }
+    );
+
+    $("#sideIllustrationUpload").addEventListener(
+      "change",
+      async (event) => {
+        const file =
+          event.target.files?.[0];
+
+        if (!file) return;
+
+        try {
+          rememberOriginalImage(
+            "sideIllustrationImage",
+            file
+          );
+
+          state.sideIllustrationImage =
+            await readImage(file, {
+              maxSide: 1600,
+              quality: 0.88
+            });
+
+          els.sideIllustrationFileName.textContent =
+            file.name;
+
+          renderPreview();
+          showToast(
+            "페어 일러스트가 적용되었습니다."
+          );
+        } catch (error) {
+          console.error(error);
+          showToast(
+            "페어 일러스트를 불러오지 못했습니다."
+          );
+        }
+      }
+    );
+
+    $("#clearSideIllustrationBtn").addEventListener(
+      "click",
+      () => {
+        state.sideIllustrationImage = "";
+        forgetOriginalImage(
+          "sideIllustrationImage"
+        );
+        $("#sideIllustrationUpload").value = "";
+        renderPreview();
+        showToast(
+          "페어 일러스트를 제거했습니다."
+        );
+      }
+    );
+
+    $("#sideIllustrationX").addEventListener(
+      "input",
+      (event) => {
+        state.sideIllustrationX =
+          Number(event.target.value);
+        renderPreview();
+      }
+    );
+
+    $("#sideIllustrationY").addEventListener(
+      "input",
+      (event) => {
+        state.sideIllustrationY =
+          Number(event.target.value);
+        renderPreview();
+      }
+    );
+
+    $("#sideIllustrationZoom").addEventListener(
+      "input",
+      (event) => {
+        state.sideIllustrationZoom =
+          Number(event.target.value);
+
+        $("#sideIllustrationZoomValue").textContent =
+          `${state.sideIllustrationZoom}%`;
+
+        renderPreview();
+      }
+    );
+
+    $("#sideIllustrationBlur").addEventListener(
+      "input",
+      (event) => {
+        state.sideIllustrationBlur =
+          Number(event.target.value);
+
+        $("#sideIllustrationBlurValue").textContent =
+          `${state.sideIllustrationBlur}px`;
+
+        renderPreview();
+      }
+    );
 
     $("#heroX").addEventListener("input", (event) => {
       state.heroX = Number(event.target.value);
@@ -7098,6 +9349,13 @@
       renderPreview();
     });
 
+    $("#symbolBlur").addEventListener("input", (event) => {
+      state.symbolBlur = Number(event.target.value);
+      $("#symbolBlurValue").textContent =
+        `${state.symbolBlur}px`;
+      renderPreview();
+    });
+
     $("#storyFontSize").addEventListener("input", (event) => {
       state.storyFontSize = Number(event.target.value);
       $("#storyFontSizeValue").textContent = `${state.storyFontSize}px`;
@@ -7138,6 +9396,11 @@
       const file = event.target.files?.[0];
       if (!file) return;
 
+      rememberOriginalImage(
+        "heroImage",
+        file
+      );
+
       state.heroImage = await readImage(file, {
         maxSide: 2000,
         quality: 0.88
@@ -7150,6 +9413,11 @@
       if (!file) return;
 
       try {
+        rememberOriginalImage(
+          "wallpaperImage",
+          file
+        );
+
         state.wallpaperImage = await readImage(file, {
           maxSide: 2200,
           quality: 0.84
@@ -7168,6 +9436,11 @@
       if (!file) return;
 
       try {
+        rememberOriginalImage(
+          "lowerBackgroundImage",
+          file
+        );
+
         state.lowerBackgroundImage = await readImage(file, {
           maxSide: 2200,
           quality: 0.84
@@ -7183,6 +9456,9 @@
 
     $("#clearWallpaperBtn").addEventListener("click", () => {
       state.wallpaperImage = "";
+      forgetOriginalImage(
+        "wallpaperImage"
+      );
       $("#wallpaperUpload").value = "";
       renderPreview();
       showToast("배경 이미지를 제거했습니다.");
@@ -7190,6 +9466,9 @@
 
     $("#clearLowerBackgroundBtn").addEventListener("click", () => {
       state.lowerBackgroundImage = "";
+      forgetOriginalImage(
+        "lowerBackgroundImage"
+      );
       $("#lowerBackgroundUpload").value = "";
       renderPreview();
       showToast("하단 배경 이미지를 제거했습니다.");
@@ -7198,6 +9477,11 @@
     $("#symbolUpload").addEventListener("change", async (event) => {
       const file = event.target.files?.[0];
       if (!file) return;
+
+      rememberOriginalImage(
+        "symbolImage",
+        file
+      );
 
       state.symbolImage = await readImage(file, {
         maxSide: 1400,
@@ -7228,6 +9512,31 @@
     bindCharacterEditor(els.charBEditor);
 
     els.storyEditorList.addEventListener("input", (event) => {
+      const richEditor = event.target.closest(
+        "[data-story-rich]"
+      );
+
+      if (richEditor) {
+        const story = state.stories.find(
+          (item) =>
+            item.id ===
+            Number(richEditor.dataset.storyRich)
+        );
+
+        if (!story) return;
+
+        story.descriptionHtml = sanitizeStoryHtml(
+          richEditor.innerHTML
+        );
+
+        story.description = storyHtmlToPlainText(
+          story.descriptionHtml
+        );
+
+        renderPreview();
+        return;
+      }
+
       const meta = event.target.dataset.storyField;
       if (!meta) return;
 
@@ -7242,7 +9551,95 @@
       renderPreview();
     });
 
+
+    els.storyEditorList.addEventListener(
+      "keydown",
+      (event) => {
+        const richEditor =
+          event.target.closest(
+            "[data-story-rich]"
+          );
+
+        if (
+          !richEditor ||
+          event.key !== "Enter" ||
+          event.isComposing
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        insertStoryLineBreak(richEditor);
+      }
+    );
+
+    els.storyEditorList.addEventListener(
+      "mousedown",
+      (event) => {
+        if (event.target.dataset.storyFormat) {
+          event.preventDefault();
+        }
+      }
+    );
+
+    els.storyEditorList.addEventListener(
+      "paste",
+      (event) => {
+        const richEditor = event.target.closest(
+          "[data-story-rich]"
+        );
+
+        if (!richEditor) return;
+
+        event.preventDefault();
+
+        const plainText =
+          event.clipboardData?.getData("text/plain") || "";
+
+        document.execCommand(
+          "insertHTML",
+          false,
+          plainTextToStoryHtml(plainText)
+        );
+      }
+    );
+
     els.storyEditorList.addEventListener("click", (event) => {
+      const format = event.target.dataset.storyFormat;
+      const formatId = Number(
+        event.target.dataset.storyFormatId
+      );
+
+      if (format && formatId) {
+        const editor = els.storyEditorList.querySelector(
+          `[data-story-rich="${formatId}"]`
+        );
+
+        const story = state.stories.find(
+          (item) => item.id === formatId
+        );
+
+        if (!editor || !story) return;
+
+        editor.focus();
+
+        document.execCommand(
+          format === "bold" ? "bold" : "italic",
+          false
+        );
+
+        story.descriptionHtml = sanitizeStoryHtml(
+          editor.innerHTML
+        );
+
+        story.description = storyHtmlToPlainText(
+          story.descriptionHtml
+        );
+
+        editor.innerHTML = story.descriptionHtml;
+        renderPreview();
+        return;
+      }
       const upId = Number(event.target.dataset.storyUp);
       const downId = Number(event.target.dataset.storyDown);
       const deleteId = Number(event.target.dataset.storyDelete);
@@ -7262,7 +9659,7 @@
       }
 
       if (deleteId) {
-        if (state.stories.length <= 4) {
+        if (state.stories.length <= 3) {
           return;
         }
 
@@ -7276,18 +9673,40 @@
     });
 
     $("#addStoryBtn").addEventListener("click", () => {
-      if (state.stories.length >= 14) {
+      if (state.stories.length >= 6) {
         return;
       }
 
       const id = nextId();
 
+      const extraStoryTemplates = [
+        {
+          time: "동등한 자리에서 함께 추락하다",
+          title: "CLIMAX"
+        },
+        {
+          time: "돌아갈 곳과 돌아오고 싶은 곳",
+          title: "NARRATIVE RESET"
+        }
+      ];
+
+      const template =
+        extraStoryTemplates[
+          Math.max(
+            0,
+            state.stories.length - 4
+          )
+        ] || {
+          time: "새로운 시기",
+          title: "새로운 서사"
+        };
+
       state.stories.push({
         id,
-        time: "새로운 시기",
-        title: "새로운 서사",
+        time: template.time,
+        title: template.title,
         description:
-          "이 시기의 이야기를 적어 주세요. 본문은 길게 입력할 수 있으며, 서사 수에 맞춰 블럭 높이가 자동으로 조정됩니다."
+          "이 시기의 이야기를 적어 주세요."
       });
 
       renderStoryEditor();
@@ -7312,98 +9731,55 @@
 
       if (!song) return;
 
-      song[field] = event.target.value;
+      const numericSongFields =
+        field === "coverX" ||
+        field === "coverY";
+
+      song[field] = numericSongFields
+        ? Number(event.target.value)
+        : event.target.value;
+
+      if (numericSongFields) {
+        const valueLabel =
+          els.songEditorList.querySelector(
+            `[data-song-cover-position-value="${song.id}:${field}"]`
+          );
+
+        if (valueLabel) {
+          valueLabel.textContent =
+            `${song[field]}%`;
+        }
+      }
+
       renderMusic();
     });
 
     els.songEditorList.addEventListener("change", async (event) => {
-      const coverId = Number(event.target.dataset.songCover);
-      const audioId = Number(event.target.dataset.songAudio);
-      const file = event.target.files?.[0];
-
-      if (!file) return;
-
-      if (coverId) {
-        const song = state.songs.find((item) => item.id === coverId);
-        if (!song) return;
-
-        song.cover = await readImage(file, {
-          maxSide: 900,
-          quality: 0.86
-        });
-        renderMusic();
-      }
-
-      if (audioId) {
-        const song = state.songs.find((item) => item.id === audioId);
-        if (!song) return;
-
-        if (song.audioUrl?.startsWith("blob:")) {
-          URL.revokeObjectURL(song.audioUrl);
-        }
-
-        song.audioUrl = URL.createObjectURL(file);
-        song.audioName = file.name;
-
-        renderSongEditor();
-        renderMusic();
-      }
-    });
-
-    els.songEditorList.addEventListener("click", (event) => {
-      const deleteId = Number(event.target.dataset.songDelete);
-      if (!deleteId) return;
-
-      const song = state.songs.find((item) => item.id === deleteId);
-
-      if (song?.audioUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(song.audioUrl);
-      }
-
-      state.songs = state.songs.filter(
-        (item) => item.id !== deleteId
+      const coverId = Number(
+        event.target.dataset.songCover
       );
 
-      if (state.activeSongId === deleteId) {
-        state.activeSongId = state.songs[0]?.id ?? null;
-      }
+      const file = event.target.files?.[0];
 
-      renderSongEditor();
-      renderMusic();
-    });
+      if (!file || !coverId) return;
 
-    $("#addSongBtn").addEventListener("click", () => {
-      const id = nextId();
+      const song = state.songs.find(
+        (item) => item.id === coverId
+      );
 
-      state.songs.push({
-        id,
-        title: "New Theme Song",
-        artist: "Artist Name",
-        cover: "",
-        audioUrl: "",
-        audioName: ""
+      if (!song) return;
+
+      rememberOriginalImage(
+        `song:${song.id}:cover`,
+        file
+      );
+
+      song.cover = await readImage(file, {
+        maxSide: 900,
+        quality: 0.86
       });
 
-      if (!state.activeSongId) {
-        state.activeSongId = id;
-      }
-
-      renderSongEditor();
       renderMusic();
-
-      requestAnimationFrame(() => {
-        $(`[data-song-editor="${id}"]`)?.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest"
-        });
-      });
-    });
-
-    els.playlist.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-play-song]");
-      if (!button) return;
-
-      playSong(Number(button.dataset.playSong));
     });
 
     $("#exportBtn").addEventListener("click", exportImage);
@@ -7442,23 +9818,15 @@
 
       if (!confirmed) return;
 
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
 
-      state.songs.forEach((song) => {
-        if (song.audioUrl?.startsWith("blob:")) {
-          URL.revokeObjectURL(song.audioUrl);
-        }
-      });
-
+      clearOriginalImages();
       state = defaultState();
 
       $("#heroUpload").value = "";
       $("#wallpaperUpload").value = "";
       $("#lowerBackgroundUpload").value = "";
       $("#symbolUpload").value = "";
+      $("#sideIllustrationUpload").value = "";
 
       hydrateEditor();
     });
