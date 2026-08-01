@@ -67,7 +67,8 @@ function requiredEnvironment() {
 
   if (missing.length) {
     throw new Error(
-      "Vercel의 R2 환경변수가 완성되지 않았습니다."
+      "누락된 R2 환경변수: " +
+      missing.join(", ")
     );
   }
 
@@ -87,7 +88,14 @@ function createClient() {
         env.accessKeyId,
       secretAccessKey:
         env.secretAccessKey
-    }
+    },
+
+    // Presigned PUT URL에 빈 파일용 CRC32 값이
+    // 자동으로 붙어 R2 서명이 어긋나는 것을 방지합니다.
+    requestChecksumCalculation:
+      "WHEN_REQUIRED",
+    responseChecksumValidation:
+      "WHEN_REQUIRED"
   });
 
   return {
