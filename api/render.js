@@ -4,21 +4,30 @@ import {
   rm,
   writeFile
 } from "node:fs/promises";
+
 import os from "node:os";
 import path from "node:path";
+
 import {
   pathToFileURL
 } from "node:url";
-import { Readable } from "node:stream";
+
+import {
+  Readable
+} from "node:stream";
+
 import chromium from "@sparticuz/chromium";
+
 import {
   DeleteObjectCommand,
   GetObjectCommand,
   S3Client
 } from "@aws-sdk/client-s3";
+
 import {
   unzipSync
 } from "fflate";
+
 import puppeteer from "puppeteer-core";
 
 const TEMP_PREFIX =
@@ -30,73 +39,193 @@ const MAX_PACKAGE_BYTES =
 const MAX_UNPACKED_BYTES =
   300 * 1024 * 1024;
 
-const MAX_ARCHIVE_ENTRIES = 32;
+const MAX_ARCHIVE_ENTRIES =
+  32;
 
 function sendJson(
   response,
   status,
   body
 ) {
-  response.statusCode = status;
+  response.statusCode =
+    status;
+
   response.setHeader(
     "Content-Type",
     "application/json; charset=utf-8"
   );
+
   response.setHeader(
     "Cache-Control",
     "no-store"
   );
+
   response.end(
-    JSON.stringify(body)
+    JSON.stringify(
+      body
+    )
   );
 }
 
-function parseBody(request) {
+function parseBody(
+  request
+) {
   if (
     typeof request.body ===
-      "string"
+    "string"
   ) {
     return JSON.parse(
       request.body
     );
   }
 
-  return request.body || {};
+  return (
+    request.body ||
+    {}
+  );
 }
 
-function isValidTemporaryKey(value) {
+function isValidTemporaryKey(
+  value
+) {
   return (
-    typeof value === "string" &&
+    typeof value ===
+      "string" &&
+
     value.startsWith(
       TEMP_PREFIX
     ) &&
-    value.endsWith(".zip") &&
-    value.length < 240 &&
-    !value.includes("..") &&
-    !value.includes("\\")
+
+    value.endsWith(
+      ".zip"
+    ) &&
+
+    value.length <
+      240 &&
+
+    !value.includes(
+      ".."
+    ) &&
+
+    !value.includes(
+      "\\"
+    )
+  );
+}
+
+/*
+ * Vercel 환경변수를 복사하는 과정에서 들어갈 수 있는
+ * 줄바꿈, 탭, 따옴표, 보이지 않는 문자를 제거합니다.
+ */
+function cleanEnvironmentValue(
+  value
+) {
+  return String(
+    value || ""
+  )
+    .trim()
+    .replace(
+      /^["'`]+|["'`]+$/g,
+      ""
+    )
+    .replace(
+      /[\r\n\t\u200B-\u200D\uFEFF]/g,
+      ""
+    )
+    .trim();
+}
+
+/*
+ * R2 환경변수에는 공백이 들어가지 않으므로
+ * 남아 있는 모든 공백도 제거합니다.
+ */
+function compactEnvironmentValue(
+  value
+) {
+  return cleanEnvironmentValue(
+    value
+  ).replace(
+    /\s+/g,
+    ""
   );
 }
 
 function requiredEnvironment() {
   const values = {
     accountId:
-      process.env.R2_ACCOUNT_ID,
+      compactEnvironmentValue(
+        process.env
+          .R2_ACCOUNT_ID
+      ),
+
     accessKeyId:
-      process.env.R2_ACCESS_KEY_ID,
+      compactEnvironmentValue(
+        process.env
+          .R2_ACCESS_KEY_ID
+      ),
+
     secretAccessKey:
-      process.env.R2_SECRET_ACCESS_KEY,
+      compactEnvironmentValue(
+        process.env
+          .R2_SECRET_ACCESS_KEY
+      ),
+
     bucket:
-      process.env.R2_BUCKET_NAME
+      compactEnvironmentValue(
+        process.env
+          .R2_BUCKET_NAME
+      )
   };
 
+  const missing =
+    Object.entries(
+      values
+    )
+      .filter(
+        ([, value]) =>
+          !value
+      )
+      .map(
+        ([key]) =>
+          key
+      );
+
   if (
-    Object.values(values).some(
-      (value) =>
-        !String(value || "").trim()
+    missing.length
+  ) {
+    throw new Error(
+      "누락된 R2 환경변수: " +
+      missing.join(", ")
+    );
+  }
+
+  if (
+    !/^[a-zA-Z0-9]+$/.test(
+      values.accountId
     )
   ) {
     throw new Error(
-      "Vercel의 R2 환경변수가 완성되지 않았습니다."
+      "R2_ACCOUNT_ID에 올바르지 않은 문자가 포함되어 있습니다."
+    );
+  }
+
+  if (
+    !/^[a-zA-Z0-9]+$/.test(
+      values.accessKeyId
+    )
+  ) {
+    throw new Error(
+      "R2_ACCESS_KEY_ID에 올바르지 않은 문자가 포함되어 있습니다."
+    );
+  }
+
+  if (
+    !/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(
+      values.bucket
+    )
+  ) {
+    throw new Error(
+      "R2_BUCKET_NAME 형식이 올바르지 않습니다."
     );
   }
 
@@ -107,23 +236,39 @@ function createClient() {
   const env =
     requiredEnvironment();
 
-  return {
-    client: new S3Client({
-      region: "auto",
+  const client =
+    new S3Client({
+      region:
+        "auto",
+
       endpoint:
         `https://${env.accountId}.r2.cloudflarestorage.com`,
+
       credentials: {
         accessKeyId:
           env.accessKeyId,
+
         secretAccessKey:
           env.secretAccessKey
-      }
-    }),
-    bucket: env.bucket
+      },
+
+      requestChecksumCalculation:
+        "WHEN_REQUIRED",
+
+      responseChecksumValidation:
+        "WHEN_REQUIRED"
+    });
+
+  return {
+    client,
+    bucket:
+      env.bucket
   };
 }
 
-async function bodyToUint8Array(body) {
+async function bodyToUint8Array(
+  body
+) {
   if (!body) {
     throw new Error(
       "R2에서 렌더 ZIP을 읽지 못했습니다."
@@ -131,22 +276,29 @@ async function bodyToUint8Array(body) {
   }
 
   if (
-    typeof body.transformToByteArray ===
-      "function"
+    typeof body
+      .transformToByteArray ===
+    "function"
   ) {
     return new Uint8Array(
-      await body.transformToByteArray()
+      await body
+        .transformToByteArray()
     );
   }
 
   const chunks = [];
   let total = 0;
 
-  for await (const chunk of body) {
+  for await (
+    const chunk of body
+  ) {
     const buffer =
-      Buffer.from(chunk);
+      Buffer.from(
+        chunk
+      );
 
-    total += buffer.length;
+    total +=
+      buffer.length;
 
     if (
       total >
@@ -157,11 +309,15 @@ async function bodyToUint8Array(body) {
       );
     }
 
-    chunks.push(buffer);
+    chunks.push(
+      buffer
+    );
   }
 
   return new Uint8Array(
-    Buffer.concat(chunks)
+    Buffer.concat(
+      chunks
+    )
   );
 }
 
@@ -170,10 +326,18 @@ function safeEntryPath(
   name
 ) {
   if (
-    typeof name !== "string" ||
+    typeof name !==
+      "string" ||
+
     !name ||
-    name.includes("\\") ||
-    name.includes("\0")
+
+    name.includes(
+      "\\"
+    ) ||
+
+    name.includes(
+      "\0"
+    )
   ) {
     throw new Error(
       "렌더 ZIP에 올바르지 않은 파일 경로가 있습니다."
@@ -181,11 +345,18 @@ function safeEntryPath(
   }
 
   const normalized =
-    path.posix.normalize(name);
+    path.posix.normalize(
+      name
+    );
 
   if (
-    normalized.startsWith("../") ||
-    normalized === ".." ||
+    normalized.startsWith(
+      "../"
+    ) ||
+
+    normalized ===
+      ".." ||
+
     path.posix.isAbsolute(
       normalized
     )
@@ -202,12 +373,17 @@ function safeEntryPath(
     );
 
   const rootPrefix =
-    path.resolve(root) +
+    path.resolve(
+      root
+    ) +
     path.sep;
 
   if (
     destination !==
-      path.resolve(root) &&
+      path.resolve(
+        root
+      ) &&
+
     !destination.startsWith(
       rootPrefix
     )
@@ -225,13 +401,19 @@ async function extractPackage(
   root
 ) {
   const files =
-    unzipSync(zipBytes);
+    unzipSync(
+      zipBytes
+    );
 
   const entries =
-    Object.entries(files);
+    Object.entries(
+      files
+    );
 
   if (
-    entries.length < 1 ||
+    entries.length <
+      1 ||
+
     entries.length >
       MAX_ARCHIVE_ENTRIES
   ) {
@@ -240,7 +422,11 @@ async function extractPackage(
     );
   }
 
-  if (!files["index.html"]) {
+  if (
+    !files[
+      "index.html"
+    ]
+  ) {
     throw new Error(
       "렌더 ZIP에서 index.html을 찾지 못했습니다."
     );
@@ -248,9 +434,16 @@ async function extractPackage(
 
   let total = 0;
 
-  for (const [name, bytes] of entries) {
+  for (
+    const [
+      name,
+      bytes
+    ] of entries
+  ) {
     const allowed =
-      name === "index.html" ||
+      name ===
+        "index.html" ||
+
       name.startsWith(
         "images/"
       );
@@ -261,7 +454,8 @@ async function extractPackage(
       );
     }
 
-    total += bytes.byteLength;
+    total +=
+      bytes.byteLength;
 
     if (
       total >
@@ -279,8 +473,13 @@ async function extractPackage(
       );
 
     await mkdir(
-      path.dirname(destination),
-      { recursive: true }
+      path.dirname(
+        destination
+      ),
+      {
+        recursive:
+          true
+      }
     );
 
     await writeFile(
@@ -300,55 +499,97 @@ export default async function handler(
   response
 ) {
   if (
-    request.method !== "POST"
+    request.method !==
+    "POST"
   ) {
     response.setHeader(
       "Allow",
       "POST"
     );
 
-    sendJson(response, 405, {
-      error:
-        "POST 요청만 지원합니다."
-    });
+    sendJson(
+      response,
+      405,
+      {
+        error:
+          "POST 요청만 지원합니다."
+      }
+    );
+
     return;
   }
 
-  const body =
-    parseBody(request);
+  let body;
 
-  const key = body?.key;
+  try {
+    body =
+      parseBody(
+        request
+      );
+  } catch {
+    sendJson(
+      response,
+      400,
+      {
+        error:
+          "렌더링 요청 데이터가 올바른 JSON 형식이 아닙니다."
+      }
+    );
 
-  if (!isValidTemporaryKey(key)) {
-    sendJson(response, 400, {
-      error:
-        "렌더링할 임시 ZIP 경로가 올바르지 않습니다."
-    });
     return;
   }
 
-  const width = Math.max(
-    900,
-    Math.min(
-      1800,
-      Number(body?.width) ||
-        1440
-    )
-  );
+  const key =
+    body?.key;
 
-  const scale = Math.max(
-    1,
-    Math.min(
-      3,
-      Number(body?.scale) ||
-        2
+  if (
+    !isValidTemporaryKey(
+      key
     )
-  );
+  ) {
+    sendJson(
+      response,
+      400,
+      {
+        error:
+          "렌더링할 임시 ZIP 경로가 올바르지 않습니다."
+      }
+    );
+
+    return;
+  }
+
+  const width =
+    Math.max(
+      900,
+      Math.min(
+        1800,
+        Number(
+          body?.width
+        ) || 1440
+      )
+    );
+
+  const scale =
+    Math.max(
+      1,
+      Math.min(
+        3,
+        Number(
+          body?.scale
+        ) || 2
+      )
+    );
 
   let browser;
-  let tempDirectory = "";
-  let client = null;
-  let bucket = "";
+  let tempDirectory =
+    "";
+
+  let client =
+    null;
+
+  let bucket =
+    "";
 
   try {
     ({
@@ -359,13 +600,19 @@ export default async function handler(
     const object =
       await client.send(
         new GetObjectCommand({
-          Bucket: bucket,
-          Key: key
+          Bucket:
+            bucket,
+
+          Key:
+            key
         })
       );
 
     if (
-      Number(object.ContentLength || 0) >
+      Number(
+        object.ContentLength ||
+        0
+      ) >
       MAX_PACKAGE_BYTES
     ) {
       throw new Error(
@@ -401,36 +648,49 @@ export default async function handler(
         tempDirectory
       );
 
-    browser = await puppeteer.launch({
-      args: [
-        ...chromium.args,
-        "--allow-file-access-from-files"
-      ],
-      defaultViewport: {
-        width,
-        height: 1200,
-        deviceScaleFactor:
-          scale
-      },
-      executablePath:
-        await chromium.executablePath(),
-      headless:
-        chromium.headless
-    });
+    browser =
+      await puppeteer.launch({
+        args: [
+          ...chromium.args,
+          "--allow-file-access-from-files"
+        ],
+
+        defaultViewport: {
+          width,
+          height:
+            1200,
+
+          deviceScaleFactor:
+            scale
+        },
+
+        executablePath:
+          await chromium
+            .executablePath(),
+
+        headless:
+          chromium.headless
+      });
 
     const page =
-      await browser.newPage();
+      await browser
+        .newPage();
 
-    await page.setExtraHTTPHeaders({
-      "Accept-Language":
-        "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
-    });
+    await page
+      .setExtraHTTPHeaders({
+        "Accept-Language":
+          "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"
+      });
 
-    await page.setViewport({
-      width,
-      height: 1200,
-      deviceScaleFactor: scale
-    });
+    await page
+      .setViewport({
+        width,
+        height:
+          1200,
+
+        deviceScaleFactor:
+          scale
+      });
 
     await page.goto(
       pathToFileURL(
@@ -441,90 +701,170 @@ export default async function handler(
           "domcontentloaded",
           "networkidle0"
         ],
-        timeout: 60_000
+
+        timeout:
+          60_000
       }
     );
 
-    await page.evaluate(async () => {
-      if (document.fonts) {
-        await Promise.allSettled([
-          document.fonts.load(
-            '400 16px "Noto Sans KR"',
-            "한글 漢字"
-          ),
-          document.fonts.load(
-            '700 16px "Noto Sans KR"',
-            "한글 漢字"
-          ),
-          document.fonts.load(
-            '900 16px "Noto Sans KR"',
-            "한글 漢字"
-          )
-        ]);
+    await page.evaluate(
+      async () => {
+        if (
+          document.fonts
+        ) {
+          await Promise
+            .allSettled([
+              document.fonts.load(
+                '400 16px "Noto Sans KR"',
+                "한글 漢字"
+              ),
 
-        await document.fonts.ready;
-      }
+              document.fonts.load(
+                '700 16px "Noto Sans KR"',
+                "한글 漢字"
+              ),
 
-      await Promise.all(
-        Array.from(
-          document.images
-        ).map(async (image) => {
-          try {
-            if (
-              typeof image.decode ===
-                "function"
-            ) {
-              await image.decode();
+              document.fonts.load(
+                '900 16px "Noto Sans KR"',
+                "한글 漢字"
+              )
+            ]);
+
+          await document
+            .fonts
+            .ready;
+        }
+
+        await Promise.all(
+          Array.from(
+            document.images
+          ).map(
+            async (
+              image
+            ) => {
+              try {
+                if (
+                  typeof image
+                    .decode ===
+                  "function"
+                ) {
+                  await image
+                    .decode();
+                }
+              } catch {
+                // 깨진 이미지가 있어도 나머지는 렌더링합니다.
+              }
             }
-          } catch {
-            // 깨진 선택 이미지가 있어도 나머지는 렌더링합니다.
+          )
+        );
+
+        await new Promise(
+          (
+            resolve
+          ) => {
+            requestAnimationFrame(
+              () => {
+                requestAnimationFrame(
+                  resolve
+                );
+              }
+            );
           }
-        })
+        );
+      }
+    );
+
+    const captureExists =
+      await page.$(
+        "#captureArea"
       );
 
-      await new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(
-            resolve
-          );
-        });
-      });
-    });
+    if (!captureExists) {
+      throw new Error(
+        "저장 영역을 찾지 못했습니다."
+      );
+    }
 
     const dimensions =
       await page.$eval(
         "#captureArea",
-        (element) => ({
-          width: Math.ceil(
-            element.getBoundingClientRect().width
-          ),
-          height: Math.ceil(
-            element.scrollHeight
-          )
+        (
+          element
+        ) => ({
+          width:
+            Math.ceil(
+              element
+                .getBoundingClientRect()
+                .width
+            ),
+
+          height:
+            Math.ceil(
+              element
+                .scrollHeight
+            )
         })
       );
 
-    await page.setViewport({
-      width: dimensions.width,
-      height: Math.max(
-        900,
-        Math.min(
-          8000,
-          dimensions.height
-        )
-      ),
-      deviceScaleFactor: scale
-    });
+    if (
+      !Number.isFinite(
+        dimensions.width
+      ) ||
+
+      !Number.isFinite(
+        dimensions.height
+      ) ||
+
+      dimensions.width <=
+        0 ||
+
+      dimensions.height <=
+        0
+    ) {
+      throw new Error(
+        "저장 영역의 크기를 계산하지 못했습니다."
+      );
+    }
+
+    await page
+      .setViewport({
+        width:
+          Math.max(
+            900,
+            Math.min(
+              1800,
+              dimensions.width
+            )
+          ),
+
+        height:
+          Math.max(
+            900,
+            Math.min(
+              8000,
+              dimensions.height
+            )
+          ),
+
+        deviceScaleFactor:
+          scale
+      });
 
     await page.evaluate(
       () =>
-        new Promise((resolve) => {
-          requestAnimationFrame(() => {
+        new Promise(
+          (
+            resolve
+          ) => {
             requestAnimationFrame(
-              resolve
+              () => {
+                requestAnimationFrame(
+                  resolve
+                );
+              }
             );
-          });
-        })
+          }
+        )
     );
 
     const target =
@@ -539,54 +879,96 @@ export default async function handler(
     }
 
     const png =
-      await target.screenshot({
-        type: "png",
-        omitBackground: false,
-        captureBeyondViewport: true
-      });
+      await target
+        .screenshot({
+          type:
+            "png",
 
-    response.statusCode = 200;
+          omitBackground:
+            false,
+
+          captureBeyondViewport:
+            true
+        });
+
+    response.statusCode =
+      200;
+
     response.setHeader(
       "Content-Type",
       "image/png"
     );
+
     response.setHeader(
       "Content-Disposition",
       'inline; filename="pair-archive.png"'
     );
+
     response.setHeader(
       "Cache-Control",
       "no-store"
     );
 
-    Readable.from(png).pipe(
-      response
+    Readable
+      .from(
+        png
+      )
+      .pipe(
+        response
+      );
+  } catch (
+    error
+  ) {
+    console.error(
+      "Chromium render API error:",
+      error
     );
-  } catch (error) {
-    console.error(error);
 
-    if (!response.headersSent) {
-      sendJson(response, 500, {
-        error:
-          error?.message ||
-          "Chromium 렌더링 중 오류가 발생했습니다."
-      });
+    if (
+      !response.headersSent
+    ) {
+      sendJson(
+        response,
+        500,
+        {
+          error:
+            error?.message ||
+            "Chromium 렌더링 중 오류가 발생했습니다."
+        }
+      );
     } else {
       response.end();
     }
   } finally {
-    await browser?.close();
+    try {
+      await browser
+        ?.close();
+    } catch (
+      error
+    ) {
+      console.warn(
+        "Chromium 브라우저를 종료하지 못했습니다.",
+        error
+      );
+    }
 
-    if (tempDirectory) {
+    if (
+      tempDirectory
+    ) {
       try {
         await rm(
           tempDirectory,
           {
-            recursive: true,
-            force: true
+            recursive:
+              true,
+
+            force:
+              true
           }
         );
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
           "임시 압축 해제 폴더를 정리하지 못했습니다.",
           error
@@ -594,15 +976,23 @@ export default async function handler(
       }
     }
 
-    if (client && bucket) {
+    if (
+      client &&
+      bucket
+    ) {
       try {
         await client.send(
           new DeleteObjectCommand({
-            Bucket: bucket,
-            Key: key
+            Bucket:
+              bucket,
+
+            Key:
+              key
           })
         );
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.warn(
           "R2 임시 ZIP 삭제에 실패했습니다.",
           error
